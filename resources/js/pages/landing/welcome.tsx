@@ -60,9 +60,9 @@ export default function Home() {
                 </section>
 
 
-                <section className="bg-gray-50 py-16">
+                <section className="bg-emerald-600 py-16">
                     <div className="max-w-7xl mx-auto px-6 text-center">
-                        <h2 className="text-3xl font-semibold mb-10">
+                        <h2 className="text-3xl font-semibold mb-10 text-white">
                             Why Choose EduFit
                         </h2>
 
@@ -101,25 +101,7 @@ export default function Home() {
 
               
 
-                <section className="bg-emerald-600 text-white py-16">
-                    <div className="max-w-5xl mx-auto px-6 text-center">
-                        <h2 className="text-3xl font-semibold mb-4">
-                            Need Custom Uniforms?
-                        </h2>
-
-                        <p className="mb-6">
-                            Place customized uniform orders with your preferred design.
-                            Minimum order quantity is 10 items.
-                        </p>
-
-                        <Link
-                            href="/custom-order"
-                            className="bg-white text-emerald-600 px-6 py-3 rounded font-medium"
-                        >
-                            Request Custom Order
-                        </Link>
-                    </div>
-                </section>
+               
 
 
                 <section className="py-16">

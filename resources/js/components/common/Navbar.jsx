@@ -2,13 +2,19 @@
 import AppLogo from '@/components/app-logo';
 import { dashboard, login, register } from '@/routes';
 import { Link, usePage } from '@inertiajs/react';
+import { useState } from 'react'
+import CustomOrderModal from '@/components/common/CustomOrderModal'
+
 
 
 
 export default function Navbar() {
     const { auth } = usePage().props;
+
+    const [openOrder, setOpenOrder] = useState(false)
+
     return (
-        
+
         <>
             {/* Header */}
             <header className="w-full bg-gradient-to-r from-emerald-600 to-teal-700">
@@ -30,7 +36,12 @@ export default function Navbar() {
                         <Link href="/" className="hover:text-emerald-200">Home</Link>
                         <Link href="/about" className="hover:text-emerald-200">About</Link>
                         <Link href="/products" className="hover:text-emerald-200">Products</Link>
-                        <Link href="/contact" className="hover:text-emerald-200">Contact</Link>
+                        <button
+                            onClick={() => setOpenOrder(true)}
+                            className="rounded-md bg-purple-600 px-4 py-2 text-sm font-medium hover:bg-purple-700"
+                        >
+                            Custom Order
+                        </button>
                     </nav>
 
                     {/* Right Logo */}
@@ -65,6 +76,11 @@ export default function Navbar() {
 
                 </div>
             </header>
+            <CustomOrderModal
+                isOpen={openOrder}
+                onClose={() => setOpenOrder(false)}
+            />
+
 
         </>
     )
