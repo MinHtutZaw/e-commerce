@@ -14,6 +14,10 @@ Route::get('/cart', function () {
     return Inertia::render('landing/cart');
 })->name('cart');
 
+Route::get('/checkout', function () {
+    return Inertia::render('landing/checkout');
+})->name('checkout');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');

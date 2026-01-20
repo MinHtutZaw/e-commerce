@@ -153,7 +153,10 @@ export default function Cart() {
                                     </div>
                                 </div>
 
-                                <button className="mt-6 w-full rounded-md bg-purple-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+                                <button 
+                                    onClick={() => router.visit('/checkout')}
+                                    className="mt-6 w-full rounded-md bg-purple-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                                >
                                     Proceed to Checkout
                                 </button>
 
