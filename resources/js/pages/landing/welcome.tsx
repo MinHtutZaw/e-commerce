@@ -7,6 +7,7 @@ import Footer from '@/Components/common/Footer';
 
 export default function Home() {
     const { auth } = usePage<SharedData>().props;
+    
 
     return (
         <><Head title="Home">

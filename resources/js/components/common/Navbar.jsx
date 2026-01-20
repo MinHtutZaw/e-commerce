@@ -12,13 +12,18 @@ import { ShoppingCart } from 'lucide-react';
 export default function Navbar() {
     const { auth } = usePage().props;
 
-    const [openOrder, setOpenOrder] = useState(false)
+    const [openOrder, setOpenOrder] = useState(false);
+
+    // Use window.location.pathname to get current route
+    const pathname = typeof window !== "undefined" ? window.location.pathname : "";
+
+    const isActive = (path) => pathname === path;
 
     return (
 
         <>
             {/* Header */}
-            <header className="w-full bg-gradient-to-r from-emerald-600 to-teal-700">
+            <header className="w-full bg-gradient-to-r from-emerald-600 to-teal-700 sticky top-0 z-50">
                 <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
 
                     {/* Left Logo */}
@@ -32,19 +37,47 @@ export default function Navbar() {
                         </span>
                     </div>
 
-                    {/* Center Menu */}
-                    <nav className="hidden md:flex items-center gap-10 text-white font-medium">
-                        <Link href="/" className="hover:text-emerald-200">Home</Link>
-                        <Link href="/about" className="hover:text-emerald-200">About</Link>
-                        <Link href="/products" className="hover:text-emerald-200">Products</Link>
+                    <nav className="hidden md:flex items-center gap-4 font-medium">
+                        <Link
+                            href="/"
+                            className={`px-4 py-2 rounded-full transition-colors duration-200 ${isActive("/") ? "bg-emerald-500 text-white" : "text-white hover:bg-emerald-700"
+                                }`}
+                        >
+                            Home
+                        </Link>
+
+                        <Link
+                            href="/about"
+                            className={`px-4 py-2 rounded-full transition-colors duration-200 ${isActive("/about") ? "bg-emerald-500 text-white" : "text-white hover:bg-emerald-700"
+                                }`}
+                        >
+                            About
+                        </Link>
+
+                        <Link
+                            href="/products"
+                            className={`px-4 py-2 rounded-full transition-colors duration-200 ${isActive("/products") ? "bg-emerald-500 text-white" : "text-white hover:bg-emerald-700"
+                                }`}
+                        >
+                            Products
+                        </Link>
+
                         <button
                             onClick={() => setOpenOrder(true)}
-                            className="rounded-md bg-purple-600 px-4 py-2 text-sm font-medium hover:bg-purple-700"
+                            className="px-4 py-2 rounded-full text-white hover:bg-emerald-600 transition-colors duration-200"
                         >
                             Custom Order
                         </button>
-                        <Link href="/cart" className="hover:text-emerald-200"> <ShoppingCart className="h-7 w-7" /></Link>
+
+                        <Link
+                            href="/cart"
+                            className="px-4 py-2 rounded-full text-white hover:bg-emerald-700 transition-colors duration-200"
+                        >
+                            <ShoppingCart className="h-6 w-6 inline-block" />
+                        </Link>
                     </nav>
+
+
 
                     {/* Right Logo */}
                     <div>
