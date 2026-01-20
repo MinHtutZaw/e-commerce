@@ -120,19 +120,7 @@ export default function CustomOrderModal({ isOpen, onClose }) {
                                 />
                             </div>
 
-                            {/* School Type */}
-                            <div>
-                                <label className="block mb-1 text-sm font-medium">School Type</label>
-                                <select
-                                    className="w-full rounded bg-gray-900 p-3"
-                                    onChange={(e) => setForm({ ...form, schoolType: e.target.value })}
-                                >
-                                    <option value="">Select School Type</option>
-                                    <option value="private">Private</option>
-                                    <option value="tu">TU</option>
-                                    <option value="government">Government</option>
-                                </select>
-                            </div>
+                          
 
                             {/* Quantity per Size */}
                             <div>

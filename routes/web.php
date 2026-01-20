@@ -7,9 +7,12 @@ Route::get('/', function () {
     return Inertia::render('landing/welcome');
 })->name('home');
 
-Route::get('/contact', function () {
-    return Inertia::render('landing/contact');
-})->name('contact');
+Route::get('/products', function () {
+    return Inertia::render('landing/products');
+})->name('products');
+Route::get('/cart', function () {
+    return Inertia::render('landing/cart');
+})->name('cart');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {

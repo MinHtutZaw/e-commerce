@@ -17,7 +17,7 @@ export default function Footer() {
 
                     {/* Navigation */}
                     <div>
-                        <h4 className="text-lg font-semibold mb-2">Quick Links</h4>
+                        <h4 className="text-lg font-semibold mb-2">Platform </h4>
                         <ul className="space-y-1 text-emerald-100 text-sm">
                             <li><a href="/" className="hover:text-white">Home</a></li>
                             <li><a href="/about" className="hover:text-white">About</a></li>

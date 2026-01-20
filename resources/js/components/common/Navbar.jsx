@@ -4,6 +4,7 @@ import { dashboard, login, register } from '@/routes';
 import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react'
 import CustomOrderModal from '@/components/common/CustomOrderModal'
+import { ShoppingCart } from 'lucide-react';
 
 
 
@@ -42,6 +43,7 @@ export default function Navbar() {
                         >
                             Custom Order
                         </button>
+                        <Link href="/cart" className="hover:text-emerald-200"> <ShoppingCart className="h-7 w-7" /></Link>
                     </nav>
 
                     {/* Right Logo */}
