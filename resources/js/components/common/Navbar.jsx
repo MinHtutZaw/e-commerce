@@ -28,13 +28,12 @@ export default function Navbar() {
 
                     {/* Left Logo */}
                     <div className="flex items-center gap-2">
-                        {/* Replace with actual logo */}
-                        <div className="h-8 w-8 rounded  flex items-center justify-center text-white font-bold">
+                        
+                        <div className="flex items-center">
                             <AppLogo />
                         </div>
-                        <span className="text-lg font-semibold text-emerald-200 ">
-                            EduFit
-                        </span>
+
+
                     </div>
 
                     <nav className="hidden md:flex items-center gap-4 font-medium">

@@ -12,27 +12,27 @@ interface PaymentMethod {
 }
 
 const PAYMENT_METHODS: PaymentMethod[] = [
-    {
-        id: "aya",
-        name: "AYA PAY",
-        bank: "AYA Bank",
-        accountName: "EduFit",
-        accountNumber: "01234567890",
-    },
-    {
+     {
         id: "kbz",
         name: "KBZ PAY",
         bank: "KBZ Bank",
         accountName: "EduFit",
         accountNumber: "09876543210",
+    },{
+        id: "aya",
+        name: "AYA PAY",
+        bank: "AYA Bank",
+        accountName: "EduFit",
+        accountNumber: "01234567890",
     }
+   
   
 ];
 
 const PREDEFINED_AMOUNTS = [5000, 10000, 15000];
 
 export default function Checkout() {
-    const [selectedMethod, setSelectedMethod] = useState<string>("AYA");
+    const [selectedMethod, setSelectedMethod] = useState<string>("kbz");
     const [paymentType, setPaymentType] = useState<"bank" | "qr">("bank");
     const [amount, setAmount] = useState<number | "">("");
     const [selectedPredefinedAmount, setSelectedPredefinedAmount] = useState<number | null>(null);

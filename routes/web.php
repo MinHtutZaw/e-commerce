@@ -18,6 +18,10 @@ Route::get('/checkout', function () {
     return Inertia::render('landing/checkout');
 })->name('checkout');
 
+Route::get('/about', function () {
+    return Inertia::render('landing/about');
+})->name('about');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');
