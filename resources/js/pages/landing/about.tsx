@@ -61,7 +61,7 @@ export default function AboutUs() {
       </section>
 
       {/* Team Section */}
-      <section className="py-16">
+      <section className="py-16 bg-white">
         <div className="mx-auto max-w-6xl px-4 text-center">
           <h2 className="text-3xl font-bold text-gray-900 mb-8">Meet Our Team</h2>
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">

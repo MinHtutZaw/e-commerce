@@ -69,7 +69,7 @@ export default function CustomOrderModal({ isOpen, onClose }) {
         const step1Errors = validateStep1()
         const step2Errors = validateStep2()
         const allErrors = { ...step1Errors, ...step2Errors }
-        
+
         if (Object.keys(allErrors).length > 0) {
             setErrors(allErrors)
             setStep(1) // Go back to first step with errors
@@ -103,11 +103,11 @@ export default function CustomOrderModal({ isOpen, onClose }) {
     }
 
     return (
-        <div 
+        <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
             onClick={onClose}
         >
-            <div 
+            <div
                 className="w-full max-w-3xl max-h-[90vh] rounded-2xl bg-gradient-to-br from-gray-900 to-gray-800 shadow-2xl border border-gray-700 flex flex-col overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
             >
@@ -129,7 +129,7 @@ export default function CustomOrderModal({ isOpen, onClose }) {
                     {/* Step Indicator */}
                     <div className="relative flex justify-between">
                         <div className="absolute left-0 top-5 h-0.5 w-full bg-gray-700" />
-                        <div 
+                        <div
                             className="absolute left-0 top-5 h-0.5 bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-300"
                             style={{ width: `${((step - 1) / 2) * 100}%` }}
                         />
@@ -140,18 +140,16 @@ export default function CustomOrderModal({ isOpen, onClose }) {
                                 className="relative z-10 flex flex-col items-center"
                             >
                                 <div
-                                    className={`flex h-10 w-10 items-center justify-center rounded-full border-2 font-semibold text-sm transition-all duration-300 ${
-                                        step >= s
+                                    className={`flex h-10 w-10 items-center justify-center rounded-full border-2 font-semibold text-sm transition-all duration-300 ${step >= s
                                             ? 'border-purple-500 bg-purple-500 text-white shadow-lg shadow-purple-500/50'
                                             : 'border-gray-600 bg-gray-800 text-gray-400'
-                                    }`}
+                                        }`}
                                 >
                                     {s}
                                 </div>
                                 <span
-                                    className={`mt-2 text-xs font-medium transition-colors ${
-                                        step >= s ? 'text-white' : 'text-gray-500'
-                                    }`}
+                                    className={`mt-2 text-xs font-medium transition-colors ${step >= s ? 'text-white' : 'text-gray-500'
+                                        }`}
                                 >
                                     {s === 1 && 'Customer'}
                                     {s === 2 && 'Order Info'}
@@ -163,7 +161,7 @@ export default function CustomOrderModal({ isOpen, onClose }) {
                 </div>
 
                 {/* Scrollable Content */}
-                <div className="flex-1 overflow-y-auto px-8 py-6">
+                <div className="flex-1 overflow-y-auto no-scrollbar px-8 py-6">
                     {/* STEP 1 */}
                     {step === 1 && (
                         <div className="space-y-6 animate-fadeIn">
@@ -181,11 +179,10 @@ export default function CustomOrderModal({ isOpen, onClose }) {
                                         type="text"
                                         value={form.name}
                                         placeholder="Enter your full name"
-                                        className={`w-full rounded-lg bg-gray-800 border px-4 py-3 text-white placeholder-gray-500 transition-all focus:outline-none focus:ring-2 ${
-                                            errors.name 
-                                                ? 'border-red-500 focus:ring-red-500' 
+                                        className={`w-full rounded-lg bg-gray-800 border px-4 py-3 text-white placeholder-gray-500 transition-all focus:outline-none focus:ring-2 ${errors.name
+                                                ? 'border-red-500 focus:ring-red-500'
                                                 : 'border-gray-700 focus:border-purple-500 focus:ring-purple-500'
-                                        }`}
+                                            }`}
                                         onChange={(e) => updateForm('name', e.target.value)}
                                     />
                                     {errors.name && (
@@ -201,11 +198,10 @@ export default function CustomOrderModal({ isOpen, onClose }) {
                                         type="email"
                                         value={form.email}
                                         placeholder="your.email@example.com"
-                                        className={`w-full rounded-lg bg-gray-800 border px-4 py-3 text-white placeholder-gray-500 transition-all focus:outline-none focus:ring-2 ${
-                                            errors.email 
-                                                ? 'border-red-500 focus:ring-red-500' 
+                                        className={`w-full rounded-lg bg-gray-800 border px-4 py-3 text-white placeholder-gray-500 transition-all focus:outline-none focus:ring-2 ${errors.email
+                                                ? 'border-red-500 focus:ring-red-500'
                                                 : 'border-gray-700 focus:border-purple-500 focus:ring-purple-500'
-                                        }`}
+                                            }`}
                                         onChange={(e) => updateForm('email', e.target.value)}
                                     />
                                     {errors.email && (
@@ -221,11 +217,10 @@ export default function CustomOrderModal({ isOpen, onClose }) {
                                         type="tel"
                                         value={form.phone}
                                         placeholder="Enter your phone number"
-                                        className={`w-full rounded-lg bg-gray-800 border px-4 py-3 text-white placeholder-gray-500 transition-all focus:outline-none focus:ring-2 ${
-                                            errors.phone 
-                                                ? 'border-red-500 focus:ring-red-500' 
+                                        className={`w-full rounded-lg bg-gray-800 border px-4 py-3 text-white placeholder-gray-500 transition-all focus:outline-none focus:ring-2 ${errors.phone
+                                                ? 'border-red-500 focus:ring-red-500'
                                                 : 'border-gray-700 focus:border-purple-500 focus:ring-purple-500'
-                                        }`}
+                                            }`}
                                         onChange={(e) => updateForm('phone', e.target.value)}
                                     />
                                     {errors.phone && (
@@ -241,11 +236,10 @@ export default function CustomOrderModal({ isOpen, onClose }) {
                                         value={form.address}
                                         placeholder="Enter your complete delivery address"
                                         rows="3"
-                                        className={`w-full rounded-lg bg-gray-800 border px-4 py-3 text-white placeholder-gray-500 transition-all focus:outline-none focus:ring-2 resize-none ${
-                                            errors.address 
-                                                ? 'border-red-500 focus:ring-red-500' 
+                                        className={`w-full rounded-lg bg-gray-800 border px-4 py-3 text-white placeholder-gray-500 transition-all focus:outline-none focus:ring-2 resize-none ${errors.address
+                                                ? 'border-red-500 focus:ring-red-500'
                                                 : 'border-gray-700 focus:border-purple-500 focus:ring-purple-500'
-                                        }`}
+                                            }`}
                                         onChange={(e) => updateForm('address', e.target.value)}
                                     />
                                     {errors.address && (
@@ -271,11 +265,10 @@ export default function CustomOrderModal({ isOpen, onClose }) {
                                     </label>
                                     <select
                                         value={form.customerType}
-                                        className={`w-full rounded-lg bg-gray-800 border px-4 py-3 text-white transition-all focus:outline-none focus:ring-2 ${
-                                            errors.customerType 
-                                                ? 'border-red-500 focus:ring-red-500' 
+                                        className={`w-full rounded-lg bg-gray-800 border px-4 py-3 text-white transition-all focus:outline-none focus:ring-2 ${errors.customerType
+                                                ? 'border-red-500 focus:ring-red-500'
                                                 : 'border-gray-700 focus:border-purple-500 focus:ring-purple-500'
-                                        }`}
+                                            }`}
                                         onChange={(e) => updateForm('customerType', e.target.value)}
                                     >
                                         <option value="" className="bg-gray-800">Select Customer Type</option>
@@ -293,11 +286,10 @@ export default function CustomOrderModal({ isOpen, onClose }) {
                                     </label>
                                     <select
                                         value={form.gender}
-                                        className={`w-full rounded-lg bg-gray-800 border px-4 py-3 text-white transition-all focus:outline-none focus:ring-2 ${
-                                            errors.gender 
-                                                ? 'border-red-500 focus:ring-red-500' 
+                                        className={`w-full rounded-lg bg-gray-800 border px-4 py-3 text-white transition-all focus:outline-none focus:ring-2 ${errors.gender
+                                                ? 'border-red-500 focus:ring-red-500'
                                                 : 'border-gray-700 focus:border-purple-500 focus:ring-purple-500'
-                                        }`}
+                                            }`}
                                         onChange={(e) => updateForm('gender', e.target.value)}
                                     >
                                         <option value="" className="bg-gray-800">Select Gender</option>
@@ -410,7 +402,7 @@ export default function CustomOrderModal({ isOpen, onClose }) {
                                         <div className="flex justify-between">
                                             <span className="text-gray-400">Quantities:</span>
                                             <span className="text-white font-medium">
-                                                {form.sizes?.small || form.sizes?.medium || form.sizes?.large 
+                                                {form.sizes?.small || form.sizes?.medium || form.sizes?.large
                                                     ? `S: ${form.sizes.small || 0}, M: ${form.sizes.medium || 0}, L: ${form.sizes.large || 0}`
                                                     : 'Not specified'
                                                 }
@@ -473,6 +465,14 @@ export default function CustomOrderModal({ isOpen, onClose }) {
                 .animate-fadeIn {
                     animation: fadeIn 0.3s ease-out;
                 }
+                
+                
+                .no-scrollbar {
+                    scrollbar-width: none;        
+                    -ms-overflow-style: none;     
+                }
+
+                
             `}</style>
         </div>
     )
