@@ -19,8 +19,18 @@ Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
 Route::put('/cart/{cartItem}', [CartController::class, 'update'])->name('cart.update');
 Route::delete('/cart/{cartItem}', [CartController::class, 'destroy'])->name('cart.destroy');
 
-Route::get('/checkout', function () {
-    return Inertia::render('landing/checkout');
+Route::get('/checkout', function (\Illuminate\Http\Request $request) {
+    $order = null;
+    if ($request->has('order')) {
+        $order = \App\Models\Order::find($request->order);
+    }
+    return Inertia::render('landing/checkout', [
+        'order' => $order ? [
+            'id' => $order->id,
+            'order_number' => $order->order_number,
+            'total_amount' => (float) $order->total_amount,
+        ] : null,
+    ]);
 })->name('checkout');
 Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
 Route::post('/payments', [PaymentController::class, 'store'])->name('payments.store');

@@ -34,13 +34,13 @@ class CartController extends Controller
             ];
         })->toArray();
 
-        $subtotal = $items->sum('total_price');
+        $subtotal = collect($items)->sum('total_price');
         $total = $subtotal; // Add shipping if needed
 
         return Inertia::render('landing/cart', [
             'items' => $items,
-            'subtotal' => $subtotal,
-            'total' => $total,
+            'subtotal' => (float) $subtotal,
+            'total' => (float) $total,
         ]);
     }
 

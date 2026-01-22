@@ -3,7 +3,6 @@ import Navbar from "@/Components/common/Navbar";
 import { useState, useEffect } from "react";
 import { Copy, Check } from "lucide-react";
 import { router, usePage } from "@inertiajs/react";
-import axios from "axios";
 
 interface PaymentMethod {
     id: number;
@@ -32,11 +31,12 @@ export default function Checkout({ order }: Props) {
 
     useEffect(() => {
         // Fetch payment methods from backend
-        axios.get('/api/payment-methods')
-            .then(response => {
-                setPaymentMethods(response.data);
-                if (response.data.length > 0) {
-                    setSelectedMethod(response.data[0].id);
+        fetch('/api/payment-methods')
+            .then(response => response.json())
+            .then(data => {
+                setPaymentMethods(data);
+                if (data.length > 0) {
+                    setSelectedMethod(data[0].id);
                 }
             })
             .catch(error => {
@@ -206,7 +206,7 @@ export default function Checkout({ order }: Props) {
                                                     </label>
                                                     <input
                                                         type="text"
-                                                        value={selectedPaymentMethod.bank}
+                                                        value={selectedPaymentMethod?.bank || ''}
                                                         readOnly
                                                         className="w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-900"
                                                     />
@@ -218,7 +218,7 @@ export default function Checkout({ order }: Props) {
                                                     </label>
                                                     <input
                                                         type="text"
-                                                        value={selectedPaymentMethod.accountName}
+                                                        value={selectedPaymentMethod?.accountName || ''}
                                                         readOnly
                                                         className="w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-900"
                                                     />
@@ -231,7 +231,7 @@ export default function Checkout({ order }: Props) {
                                                     <div className="flex gap-2">
                                                         <input
                                                             type="text"
-                                                            value={selectedPaymentMethod.accountNumber}
+                                                            value={selectedPaymentMethod?.accountNumber || ''}
                                                             readOnly
                                                             className="flex-1 rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-900"
                                                         />
@@ -257,14 +257,24 @@ export default function Checkout({ order }: Props) {
                                             </div>
                                         </div>
 
-                                        {/* QR Code Placeholder (if QR selected) */}
-                                        {paymentType === "qr" && (
+                                        {/* QR Code (if QR selected) */}
+                                        {paymentType === "qr" && selectedPaymentMethod?.qrCodeImage && (
+                                            <div className="mt-4 flex items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-8">
+                                                <div className="text-center">
+                                                    <img 
+                                                        src={selectedPaymentMethod.qrCodeImage} 
+                                                        alt="QR Code" 
+                                                        className="mx-auto mb-2 h-32 w-32 rounded-lg"
+                                                    />
+                                                    <p className="text-xs text-gray-500">QR Code</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {paymentType === "qr" && !selectedPaymentMethod?.qrCodeImage && (
                                             <div className="mt-4 flex items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-8">
                                                 <div className="text-center">
                                                     <div className="mx-auto mb-2 h-32 w-32 rounded-lg bg-gray-200"></div>
-                                                    {/* <img  src="/img/slider-1.png" alt="qr" /> */}
-                                                    <p className="text-xs text-gray-500">QR Code</p>
-                                                     
+                                                    <p className="text-xs text-gray-500">QR Code not available</p>
                                                 </div>
                                             </div>
                                         )}
@@ -295,10 +305,10 @@ export default function Checkout({ order }: Props) {
                                 {/* Submit Button */}
                                 <button
                                     type="submit"
-                                    disabled={ transactionId.length !== 4}
+                                    disabled={!selectedMethod || transactionId.length !== 4 || loading}
                                     className="w-full rounded-md bg-purple-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:hover:bg-gray-400"
                                 >
-                                    Submit Payment
+                                    {loading ? 'Submitting...' : 'Submit Payment'}
                                 </button>
                             </div>
                         </div>

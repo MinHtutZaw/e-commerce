@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { router } from '@inertiajs/react'
 
 export default function CustomOrderModal({ isOpen, onClose }) {
     const [step, setStep] = useState(1)
@@ -76,11 +77,46 @@ export default function CustomOrderModal({ isOpen, onClose }) {
             return
         }
 
-        // Submit form data
-        console.log('Submitting order:', form)
-        // Add your submission logic here
-        alert('Order submitted successfully!')
-        onClose()
+        // Submit form data to backend
+        router.post('/custom-orders', {
+            customer_name: form.name,
+            customer_email: form.email,
+            customer_phone: form.phone,
+            delivery_address: form.address,
+            customer_type: form.customerType,
+            gender: form.gender,
+            uniform_type: form.uniformType,
+            size_small_quantity: parseInt(form.sizes.small) || 0,
+            size_medium_quantity: parseInt(form.sizes.medium) || 0,
+            size_large_quantity: parseInt(form.sizes.large) || 0,
+            notes: form.notes,
+        }, {
+            onSuccess: () => {
+                alert('Custom order submitted successfully! We will contact you soon with a quote.')
+                onClose()
+                // Reset form
+                setForm({
+                    customerType: '',
+                    gender: '',
+                    uniformType: '',
+                    notes: '',
+                    name: '',
+                    email: '',
+                    phone: '',
+                    address: '',
+                    sizes: {
+                        small: '',
+                        medium: '',
+                        large: ''
+                    }
+                })
+                setStep(1)
+            },
+            onError: (errors) => {
+                console.error('Submission error:', errors)
+                alert('Failed to submit order. Please try again.')
+            },
+        })
     }
 
     const updateForm = (field, value) => {

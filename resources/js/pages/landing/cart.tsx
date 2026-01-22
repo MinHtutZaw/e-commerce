@@ -173,7 +173,23 @@ export default function Cart({ items: initialItems, subtotal: initialSubtotal, t
                                 </div>
 
                                 <button 
-                                    onClick={() => router.visit('/checkout')}
+                                    onClick={() => {
+                                        // Create order from cart
+                                        router.post('/orders', {
+                                            customer_name: 'Guest User', // You can get from user or form
+                                            customer_email: 'guest@example.com',
+                                            customer_phone: '',
+                                            delivery_address: '',
+                                        }, {
+                                            onSuccess: (page) => {
+                                                // Redirect to checkout with order
+                                                router.visit('/checkout?order=' + page.props.order?.id);
+                                            },
+                                            onError: (errors) => {
+                                                alert('Please fill in customer details first');
+                                            },
+                                        });
+                                    }}
                                     className="mt-6 w-full rounded-md bg-purple-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
                                 >
                                     Proceed to Checkout

@@ -81,8 +81,10 @@ class OrderController extends Controller
 
             DB::commit();
 
-            return redirect()->route('checkout', ['order' => $order->id])
-                ->with('success', 'Order created successfully');
+            return back()->with([
+                'success' => 'Order created successfully',
+                'order' => $order,
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors(['error' => 'Failed to create order']);
