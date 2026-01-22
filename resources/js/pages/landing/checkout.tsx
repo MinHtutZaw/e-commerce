@@ -1,82 +1,110 @@
 import Footer from "@/Components/common/Footer";
 import Navbar from "@/Components/common/Navbar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Copy, Check } from "lucide-react";
+import { router, usePage } from "@inertiajs/react";
+import axios from "axios";
 
 interface PaymentMethod {
-    id: string;
+    id: number;
     name: string;
     bank: string;
     accountName: string;
     accountNumber: string;
+    qrCodeImage?: string;
 }
 
-const PAYMENT_METHODS: PaymentMethod[] = [
-     {
-        id: "kbz",
-        name: "KBZ PAY",
-        bank: "KBZ Bank",
-        accountName: "EduFit",
-        accountNumber: "09876543210",
-    },{
-        id: "aya",
-        name: "AYA PAY",
-        bank: "AYA Bank",
-        accountName: "EduFit",
-        accountNumber: "01234567890",
-    }
-   
-  
-];
+interface Props {
+    order?: {
+        id: number;
+        order_number: string;
+        total_amount: number;
+    };
+}
 
-const PREDEFINED_AMOUNTS = [5000, 10000, 15000];
-
-export default function Checkout() {
-    const [selectedMethod, setSelectedMethod] = useState<string>("kbz");
+export default function Checkout({ order }: Props) {
+    const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+    const [selectedMethod, setSelectedMethod] = useState<number | null>(null);
     const [paymentType, setPaymentType] = useState<"bank" | "qr">("bank");
-    const [amount, setAmount] = useState<number | "">("");
-    const [selectedPredefinedAmount, setSelectedPredefinedAmount] = useState<number | null>(null);
     const [transactionId, setTransactionId] = useState<string>("");
     const [copied, setCopied] = useState(false);
+    const [loading, setLoading] = useState(false);
 
-    const selectedPaymentMethod = PAYMENT_METHODS.find((m) => m.id === selectedMethod) || PAYMENT_METHODS[0];
+    useEffect(() => {
+        // Fetch payment methods from backend
+        axios.get('/api/payment-methods')
+            .then(response => {
+                setPaymentMethods(response.data);
+                if (response.data.length > 0) {
+                    setSelectedMethod(response.data[0].id);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching payment methods:', error);
+            });
+    }, []);
 
-    const handleAmountSelect = (value: number) => {
-        setAmount(value);
-        setSelectedPredefinedAmount(value);
-    };
-
-    const handleCustomAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        if (value === "") {
-            setAmount("");
-            setSelectedPredefinedAmount(null);
-        } else {
-            const numValue = parseInt(value);
-            if (!isNaN(numValue) && numValue > 0) {
-                setAmount(numValue);
-                setSelectedPredefinedAmount(null);
-            }
-        }
-    };
+    const selectedPaymentMethod = paymentMethods.find((m) => m.id === selectedMethod);
 
     const handleCopy = () => {
-        navigator.clipboard.writeText(selectedPaymentMethod.accountNumber);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        if (selectedPaymentMethod) {
+            navigator.clipboard.writeText(selectedPaymentMethod.accountNumber);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        }
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // Handle form submission
-        console.log({
-            paymentMethod: selectedMethod,
-            paymentType,
-            amount,
-            transactionId,
+        
+        if (!order || !selectedMethod || transactionId.length !== 4) {
+            return;
+        }
+
+        setLoading(true);
+
+        router.post('/payments', {
+            order_id: order.id,
+            payment_method_id: selectedMethod,
+            transaction_id: transactionId,
+            payment_type: paymentType,
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                alert('Payment submitted successfully! We will verify and confirm your payment shortly.');
+                router.visit('/');
+            },
+            onError: (errors) => {
+                console.error('Payment submission error:', errors);
+                alert('Failed to submit payment. Please try again.');
+            },
+            onFinish: () => {
+                setLoading(false);
+            },
         });
-        // Add your submission logic here
     };
+
+    // If no order, redirect to cart
+    if (!order) {
+        return (
+            <>
+                <Navbar />
+                <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                    <div className="text-center">
+                        <h1 className="text-2xl font-bold text-gray-900 mb-4">No Order Found</h1>
+                        <p className="text-gray-600 mb-6">Please add items to your cart first.</p>
+                        <button
+                            onClick={() => router.visit('/cart')}
+                            className="rounded-md bg-purple-600 px-6 py-3 text-sm font-semibold text-white hover:bg-purple-700"
+                        >
+                            Go to Cart
+                        </button>
+                    </div>
+                </div>
+                <Footer />
+            </>
+        );
+    }
 
     return (
         <>
@@ -106,7 +134,7 @@ export default function Checkout() {
                                     </p>
 
                                     <div className="space-y-3">
-                                        {PAYMENT_METHODS.map((method) => (
+                                        {paymentMethods.map((method) => (
                                             <label
                                                 key={method.id}
                                                 className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-colors ${
@@ -120,7 +148,7 @@ export default function Checkout() {
                                                     name="paymentMethod"
                                                     value={method.id}
                                                     checked={selectedMethod === method.id}
-                                                    onChange={(e) => setSelectedMethod(e.target.value)}
+                                                    onChange={(e) => setSelectedMethod(Number(e.target.value))}
                                                     className="h-4 w-4 border-gray-300 text-emerald-600 focus:ring-emerald-500"
                                                 />
                                                 <span className="flex-1 font-medium text-gray-900">

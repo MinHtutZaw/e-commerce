@@ -13,6 +13,11 @@ export default function Home() {
         <><Head title="Home">
             <link rel="preconnect" href="https://fonts.bunny.net" />
             <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
+            <style>{`
+                html, body {
+                    background-color: white !important;
+                }
+            `}</style>
         </Head>
 
             <div className="min-h-screen bg-white text-[#1b1b18]">

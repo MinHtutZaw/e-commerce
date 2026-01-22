@@ -7,7 +7,7 @@ interface TeamMember {
   image: string;
 }
 
-const TEAM_MEMBERS: TeamMember[] = [
+const TeamMembers: TeamMember[] = [
   {
     name: "Min Htut",
     role: "Founder & CEO",
@@ -65,7 +65,7 @@ export default function AboutUs() {
         <div className="mx-auto max-w-6xl px-4 text-center">
           <h2 className="text-3xl font-bold text-gray-900 mb-8">Meet Our Team</h2>
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {TEAM_MEMBERS.map((member) => (
+            {TeamMembers.map((member) => (
               <div
                 key={member.name}
                 className="rounded-xl bg-white p-6 shadow hover:shadow-lg transition"

@@ -2,8 +2,79 @@ import Footer from "@/Components/common/Footer";
 import Navbar from "@/Components/common/Navbar";
 import { router } from "@inertiajs/react";
 import { Trash2 } from "lucide-react";
+import { useState } from "react";
 
-export default function Cart() {
+interface CartItem {
+    id: number;
+    product_id: number;
+    name: string;
+    size: string;
+    quantity: number;
+    unit_price: number;
+    total_price: number;
+    image: string;
+}
+
+interface Props {
+    items: CartItem[];
+    subtotal: number;
+    total: number;
+}
+
+export default function Cart({ items: initialItems, subtotal: initialSubtotal, total: initialTotal }: Props) {
+    const [items, setItems] = useState(initialItems);
+    const [subtotal, setSubtotal] = useState(initialSubtotal);
+    const [total, setTotal] = useState(initialTotal);
+
+    const handleQuantityChange = (itemId: number, quantity: number) => {
+        if (quantity < 1) return;
+
+        router.put(`/cart/${itemId}`, { quantity }, {
+            preserveScroll: true,
+            onSuccess: (page) => {
+                setItems(page.props.items);
+                setSubtotal(page.props.subtotal);
+                setTotal(page.props.total);
+            },
+        });
+    };
+
+    const handleRemove = (itemId: number) => {
+        router.delete(`/cart/${itemId}`, {
+            preserveScroll: true,
+            onSuccess: (page) => {
+                setItems(page.props.items);
+                setSubtotal(page.props.subtotal);
+                setTotal(page.props.total);
+            },
+        });
+    };
+
+    if (items.length === 0) {
+        return (
+            <>
+                <Navbar />
+                <div className="min-h-screen bg-gray-50">
+                    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+                        <div className="text-center py-12">
+                            <h1 className="text-3xl font-bold text-emerald-700 sm:text-4xl mb-4">
+                                Your Cart is Empty
+                            </h1>
+                            <p className="text-gray-600 mb-6">Add some products to get started!</p>
+                            <button 
+                                onClick={() => router.visit('/products')}
+                                className="inline-block rounded-md bg-purple-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-purple-700"
+                            >
+                                Continue Shopping
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <Footer />
+            </>
+        );
+    }
+
     return (
         <>
             <Navbar />
@@ -23,110 +94,60 @@ export default function Cart() {
                         {/* Cart Items Section */}
                         <div className="lg:col-span-2">
                             <div className="space-y-4">
-                                {/* Item 1 */}
-                                <div className="flex flex-col gap-4 rounded-xl border bg-white p-4 shadow-sm transition-shadow hover:shadow-md sm:flex-row sm:items-center">
-                                    <div className="flex-shrink-0">
-                                        <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-lg bg-gray-100 sm:h-28 sm:w-28">
-                                            <img
-                                                src="/img/slider-1.png"
-                                                alt="Purple T-shirt"
-                                                className="h-full w-full object-contain p-2"
-                                                
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                        <div className="flex-1">
-                                            <h3 className="text-lg font-semibold text-gray-900">
-                                                Purple T-shirt
-                                            </h3>
-                                            <p className="mt-1 text-sm text-gray-500">
-                                                Size: M
-                                            </p>
-                                            <p className="mt-1 text-base font-semibold text-emerald-600">
-                                                $12.00
-                                            </p>
-                                        </div>
-
-                                        <div className="flex items-center gap-4">
-                                            <div className="flex items-center gap-2">
-                                                <label className="sr-only">Quantity</label>
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    defaultValue={1}
-                                                    className="w-20 rounded-md border border-gray-300 px-3 py-2 text-center text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-opacity-20"
+                                {items.map((item) => (
+                                    <div key={item.id} className="flex flex-col gap-4 rounded-xl border bg-white p-4 shadow-sm transition-shadow hover:shadow-md sm:flex-row sm:items-center">
+                                        <div className="flex-shrink-0">
+                                            <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-lg bg-gray-100 sm:h-28 sm:w-28">
+                                                <img
+                                                    src={item.image}
+                                                    alt={item.name}
+                                                    className="h-full w-full object-contain p-2"
                                                 />
                                             </div>
+                                        </div>
 
-                                            <div className="w-20 text-right">
-                                                <p className="text-base font-semibold text-gray-900">
-                                                    $12.00
+                                        <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                            <div className="flex-1">
+                                                <h3 className="text-lg font-semibold text-gray-900">
+                                                    {item.name}
+                                                </h3>
+                                                <p className="mt-1 text-sm text-gray-500">
+                                                    Size: {item.size}
+                                                </p>
+                                                <p className="mt-1 text-base font-semibold text-emerald-600">
+                                                    ${item.unit_price.toFixed(2)}
                                                 </p>
                                             </div>
 
-                                            <button 
-                                                className="flex-shrink-0 rounded-lg p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                                                aria-label="Remove item"
-                                            >
-                                                <Trash2 size={20} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex items-center gap-2">
+                                                    <label className="sr-only">Quantity</label>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        value={item.quantity}
+                                                        onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value))}
+                                                        className="w-20 rounded-md border border-gray-300 px-3 py-2 text-center text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-opacity-20"
+                                                    />
+                                                </div>
 
-                                {/* Item 2 */}
-                                <div className="flex flex-col gap-4 rounded-xl border bg-white p-4 shadow-sm transition-shadow hover:shadow-md sm:flex-row sm:items-center">
-                                    <div className="flex-shrink-0">
-                                        <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-lg bg-gray-100 sm:h-28 sm:w-28">
-                                            <img
-                                                src="/img/slider-1.png"
-                                                alt="White T-shirt"
-                                                className="h-full w-full object-contain p-2"
-                                            />
-                                        </div>
-                                    </div>
+                                                <div className="w-20 text-right">
+                                                    <p className="text-base font-semibold text-gray-900">
+                                                        ${item.total_price.toFixed(2)}
+                                                    </p>
+                                                </div>
 
-                                    <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                        <div className="flex-1">
-                                            <h3 className="text-lg font-semibold text-gray-900">
-                                                White T-shirt
-                                            </h3>
-                                            <p className="mt-1 text-sm text-gray-500">
-                                                Size: L
-                                            </p>
-                                            <p className="mt-1 text-base font-semibold text-emerald-600">
-                                                $15.00
-                                            </p>
-                                        </div>
-
-                                        <div className="flex items-center gap-4">
-                                            <div className="flex items-center gap-2">
-                                                <label className="sr-only">Quantity</label>
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    defaultValue={2}
-                                                    className="w-20 rounded-md border border-gray-300 px-3 py-2 text-center text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-opacity-20"
-                                                />
+                                                <button 
+                                                    onClick={() => handleRemove(item.id)}
+                                                    className="flex-shrink-0 rounded-lg p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                                                    aria-label="Remove item"
+                                                >
+                                                    <Trash2 size={20} />
+                                                </button>
                                             </div>
-
-                                            <div className="w-20 text-right">
-                                                <p className="text-base font-semibold text-gray-900">
-                                                    $30.00
-                                                </p>
-                                            </div>
-
-                                            <button 
-                                                className="flex-shrink-0 rounded-lg p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                                                aria-label="Remove item"
-                                            >
-                                                <Trash2 size={20} />
-                                            </button>
                                         </div>
                                     </div>
-                                </div>
+                                ))}
                             </div>
                         </div>
 
@@ -140,15 +161,13 @@ export default function Cart() {
                                 <div className="space-y-4">
                                     <div className="flex justify-between text-sm text-gray-600">
                                         <span>Subtotal</span>
-                                        <span className="font-medium text-gray-900">$42.00</span>
+                                        <span className="font-medium text-gray-900">${subtotal.toFixed(2)}</span>
                                     </div>
-
-                                   
 
                                     <div className="border-t border-gray-200 pt-4">
                                         <div className="flex justify-between">
                                             <span className="text-lg font-semibold text-gray-900">Total</span>
-                                            <span className="text-lg font-bold text-emerald-600">$42.00</span>
+                                            <span className="text-lg font-bold text-emerald-600">${total.toFixed(2)}</span>
                                         </div>
                                     </div>
                                 </div>

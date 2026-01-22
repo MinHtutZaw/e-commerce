@@ -1,53 +1,72 @@
 import Footer from "@/Components/common/Footer";
 import Navbar from "@/Components/common/Navbar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ShoppingCart } from 'lucide-react';
+import { router, usePage } from '@inertiajs/react';
 
-const PRODUCTS = [
-    {
-        id: 1,
-        name: "School Shirt",
-        type: "Shirt",
-        size: "M",
-        price: 12,
-        image: "/img/slider-1.png",
-    },
-    {
-        id: 2,
-        name: "School Pant",
-        type: "Pant",
-        size: "L",
-        price: 18,
-        image: "/img/slider-1.png",
-    },
-    {
-        id: 3,
-        name: "School Blouse",
-        type: "Blouse",
-        size: "S",
-        price: 14,
-        image: "/img/slider-1.png",
-    },
-    {
-        id: 4,
-        name: "Sports T-Shirt",
-        type: "Shirt",
-        size: "L",
-        price: 15,
-        image: "/img/slider-1.png",
-    },
-];
+interface Product {
+    id: number;
+    name: string;
+    type: string;
+    price: number;
+    image: string;
+    sizes: Array<{ size: string; price: number; available: boolean }>;
+}
 
-export default function Products() {
+interface Props {
+    products: Product[];
+    categories: Array<{ id: number; name: string }>;
+}
+
+export default function Products({ products: initialProducts, categories }: Props) {
     const [selectedType, setSelectedType] = useState("");
     const [selectedSize, setSelectedSize] = useState("");
     const [search, setSearch] = useState("");
+    const [selectedSizeForProduct, setSelectedSizeForProduct] = useState<Record<number, string>>({});
 
+    const handleAddToCart = (product: Product) => {
+        const size = selectedSizeForProduct[product.id] || product.sizes[0]?.size;
+        
+        if (!size) {
+            alert('Please select a size');
+            return;
+        }
 
-    const filteredProducts = PRODUCTS.filter((product) => {
+        router.post('/cart', {
+            product_id: product.id,
+            size: size,
+            quantity: 1,
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                alert('Added to cart!');
+            },
+        });
+    };
+
+    const handleFilterChange = () => {
+        router.get('/products', {
+            type: selectedType || undefined,
+            size: selectedSize || undefined,
+            search: search || undefined,
+        }, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            handleFilterChange();
+        }, 300);
+
+        return () => clearTimeout(timeoutId);
+    }, [search]);
+
+    const filteredProducts = initialProducts.filter((product) => {
         return (
             (!selectedType || product.type === selectedType) &&
-            (!selectedSize || product.size === selectedSize) &&
+            (!selectedSize || product.sizes.some(s => s.size === selectedSize && s.available)) &&
             (!search || product.name.toLowerCase().includes(search.toLowerCase()))
         );
     });
@@ -78,28 +97,36 @@ export default function Products() {
                             />
                         </div>
 
-                        {/* Right: Search */}
+                        {/* Right: Filters */}
                         <div className="flex gap-3">
                             <select
                                 value={selectedType}
-                                onChange={(e) => setSelectedType(e.target.value)}
+                                onChange={(e) => {
+                                    setSelectedType(e.target.value);
+                                    handleFilterChange();
+                                }}
                                 className="rounded-md border px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
                             >
                                 <option value="">All Types</option>
-                                <option value="Shirt">Shirt</option>
-                                <option value="Pant">Pant</option>
-                                <option value="Blouse">Blouse</option>
+                                {categories.map((cat) => (
+                                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                ))}
                             </select>
 
                             <select
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
+                                value={selectedSize}
+                                onChange={(e) => {
+                                    setSelectedSize(e.target.value);
+                                    handleFilterChange();
+                                }}
                                 className="rounded-md border px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
                             >
                                 <option value="">All Sizes</option>
                                 <option value="S">S</option>
                                 <option value="M">M</option>
                                 <option value="L">L</option>
+                                <option value="XL">XL</option>
+                                <option value="XXL">XXL</option>
                             </select>
                         </div>
                     </div>
@@ -130,15 +157,39 @@ export default function Products() {
 
                                     {/* Meta */}
                                     <p className="mt-1 text-sm text-gray-500">
-                                        {product.type} • Size {product.size}
+                                        {product.type}
                                     </p>
+
+                                    {/* Size Selection */}
+                                    {product.sizes.length > 0 && (
+                                        <select
+                                            value={selectedSizeForProduct[product.id] || ''}
+                                            onChange={(e) => setSelectedSizeForProduct({
+                                                ...selectedSizeForProduct,
+                                                [product.id]: e.target.value
+                                            })}
+                                            className="mt-2 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:ring-emerald-500"
+                                        >
+                                            <option value="">Select Size</option>
+                                            {product.sizes.filter(s => s.available).map((size) => (
+                                                <option key={size.size} value={size.size}>
+                                                    {size.size} - ${size.price}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
 
                                     {/* Price */}
                                     <p className="mt-2 text-lg font-bold text-emerald-600">
-                                        ${product.price}
+                                        ${selectedSizeForProduct[product.id] 
+                                            ? product.sizes.find(s => s.size === selectedSizeForProduct[product.id])?.price || product.price
+                                            : product.price}
                                     </p>
 
-                                    <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-purple-600 py-2 text-sm font-medium text-white hover:bg-purple-700">
+                                    <button 
+                                        onClick={() => handleAddToCart(product)}
+                                        className="mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-purple-600 py-2 text-sm font-medium text-white hover:bg-purple-700"
+                                    >
                                         <ShoppingCart className="h-4 w-4" />
                                         Add to Cart
                                     </button>
