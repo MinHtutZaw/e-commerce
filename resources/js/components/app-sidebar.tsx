@@ -2,11 +2,12 @@ import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
-import { dashboard } from '@/routes';
+
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-react';
+import { BookOpen, BriefcaseIcon, Folder, LayoutGrid, Library, Package, Users } from 'lucide-react';
 import AppLogo from './app-logo';
+import { dashboard } from '@/routes';
 
 const mainNavItems: NavItem[] = [
     {
@@ -14,6 +15,23 @@ const mainNavItems: NavItem[] = [
         href: dashboard(),
         icon: LayoutGrid,
     },
+    {
+        title: 'Customer',
+        href: '/customers',
+        icon: Users,
+    },
+    {
+        title: 'Products',
+        href: '/admin/products',
+        icon: BriefcaseIcon,
+    },
+
+    {
+        title: 'Orders',
+        href: '/orders',
+        icon:   Package ,
+    },
+   
 ];
 
 

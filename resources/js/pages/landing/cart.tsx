@@ -21,6 +21,12 @@ interface Props {
     total: number;
 }
 
+interface OrderResponse {
+    order: {
+        id: number;
+    };
+}
+
 export default function Cart({ items: initialItems, subtotal: initialSubtotal, total: initialTotal }: Props) {
     const [items, setItems] = useState(initialItems);
     const [subtotal, setSubtotal] = useState(initialSubtotal);
@@ -31,10 +37,10 @@ export default function Cart({ items: initialItems, subtotal: initialSubtotal, t
 
         router.put(`/cart/${itemId}`, { quantity }, {
             preserveScroll: true,
-            onSuccess: (page) => {
-                setItems(page.props.items);
-                setSubtotal(page.props.subtotal);
-                setTotal(page.props.total);
+            onSuccess: (page: any) => {
+                setItems(page.props.items as CartItem[]);
+                setSubtotal(page.props.subtotal as number);
+                setTotal(page.props.total as number);
             },
         });
     };
@@ -42,10 +48,10 @@ export default function Cart({ items: initialItems, subtotal: initialSubtotal, t
     const handleRemove = (itemId: number) => {
         router.delete(`/cart/${itemId}`, {
             preserveScroll: true,
-            onSuccess: (page) => {
-                setItems(page.props.items);
-                setSubtotal(page.props.subtotal);
-                setTotal(page.props.total);
+            onSuccess: (page: any) => {
+                setItems(page.props.items as CartItem[]);
+                setSubtotal(page.props.subtotal as number);
+                setTotal(page.props.total as number);
             },
         });
     };
@@ -181,9 +187,10 @@ export default function Cart({ items: initialItems, subtotal: initialSubtotal, t
                                             customer_phone: '',
                                             delivery_address: '',
                                         }, {
-                                            onSuccess: (page) => {
+                                            onSuccess: (page: any) => {
                                                 // Redirect to checkout with order
-                                                router.visit('/checkout?order=' + page.props.order?.id);
+                                                const orderId = (page.props.order as { id: number })?.id;
+                                                router.visit('/checkout?order=' + orderId);
                                             },
                                             onError: (errors) => {
                                                 alert('Please fill in customer details first');

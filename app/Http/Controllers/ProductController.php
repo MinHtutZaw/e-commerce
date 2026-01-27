@@ -21,6 +21,16 @@ class ProductController extends Controller
             });
         }
 
+        // Filter by gender
+        if ($request->has('gender') && $request->gender) {
+            $query->where('gender', $request->gender);
+        }
+
+        // Filter by uniform type
+        if ($request->has('uniform_type') && $request->uniform_type) {
+            $query->where('uniform_type', $request->uniform_type);
+        }
+
         // Filter by size
         if ($request->has('size') && $request->size) {
             $query->whereHas('sizes', function ($q) use ($request) {

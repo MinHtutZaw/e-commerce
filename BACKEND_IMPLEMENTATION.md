@@ -11,8 +11,7 @@
 - ✅ OrderItem
 - ✅ CustomOrder
 - ✅ CartItem
-- ✅ PaymentMethod
-- ✅ Payment
+- ✅ Setting (for payment account configuration)
 - ✅ Address
 
 ### 2. **Controllers Created**
@@ -20,8 +19,8 @@
 - ✅ `CartController` - Add, update, remove cart items
 - ✅ `OrderController` - Create orders from cart
 - ✅ `CustomOrderController` - Handle custom order submissions
-- ✅ `PaymentMethodController` - Fetch active payment methods
-- ✅ `PaymentController` - Submit payment transactions
+- ✅ `PaymentController` - Submit payment transactions and get payment info
+- ✅ `Admin\SettingsController` - Manage payment account settings (admin only)
 
 ### 3. **Routes Configured**
 - ✅ `/products` - Product listing with filters
@@ -30,13 +29,15 @@
 - ✅ `/checkout` - Checkout page with order data
 - ✅ `/payments` - Payment submission (POST)
 - ✅ `/custom-orders` - Custom order submission (POST)
-- ✅ `/api/payment-methods` - API endpoint for payment methods
+- ✅ `/api/payment-info` - API endpoint for payment account details
+- ✅ `/admin/settings` - Admin page to edit payment settings (GET, PUT)
 
 ### 4. **Frontend Updated**
 - ✅ **Products Page** - Now fetches from backend, supports filtering, add to cart
 - ✅ **Cart Page** - Dynamic cart items, quantity updates, remove items
-- ✅ **Checkout Page** - Fetches payment methods from backend, submits payments
+- ✅ **Checkout Page** - Simplified payment form with single account details
 - ✅ **CustomOrderModal** - Submits custom orders to backend
+- ✅ **Admin Settings Page** - Interface for admin to edit payment account details
 
 ## 🔄 Current Flow
 
@@ -60,10 +61,10 @@
 
 ### Checkout & Payment
 1. Checkout page loads with order details
-2. Payment methods fetched from database
-3. User selects payment method and enters transaction ID
-4. Payment submitted to backend
-5. Order payment status updated
+2. Payment account info fetched from settings
+3. User sees single payment account (bank name, account name, account number)
+4. User enters their account name and last 4 digits of transaction ID
+5. Payment info submitted and order status updated to "pending"
 
 ### Custom Orders
 1. User opens Custom Order modal
@@ -104,12 +105,7 @@
    php artisan migrate
    ```
 
-2. **Seed Payment Methods:**
-   ```bash
-   php artisan db:seed --class=PaymentMethodSeeder
-   ```
-
-3. **Add Sample Data (Optional):**
+2. **Add Sample Data (Optional):**
    - Create categories
    - Add products with sizes
    - Test the flow
@@ -117,7 +113,7 @@
 ## 📋 Database Tables
 
 All tables are created via migrations:
-- `users` (extended)
+- `users` (extended with phone, role)
 - `categories`
 - `products`
 - `product_sizes`
@@ -125,13 +121,26 @@ All tables are created via migrations:
 - `order_items`
 - `custom_orders`
 - `cart_items`
-- `payment_methods`
-- `payments`
+- `settings` (for payment account configuration)
 - `addresses`
+
+**Note:** The `payment_methods` and `payments` tables have been removed in favor of a simpler settings-based approach.
 
 ## 🔧 Configuration Notes
 
 - Cart supports both authenticated users and guest sessions
 - Orders can be created for both logged-in and guest users
-- Payment methods are managed by admins via database
+- Payment account details are stored in settings table and editable via admin panel at `/admin/settings`
+- Default payment info: Bank: "KBZ Bank", Account Name: "EduFit", Account Number: "09876543210"
+- Customers enter their own account name and last 4 digits of transaction ID for verification
 - Custom orders are stored separately and can be converted to orders later
+
+## 🎯 Simplified Payment System
+
+The payment system has been simplified to remove complex integrations:
+
+1. **Single Payment Account**: One default payment account configured by admin
+2. **Manual Verification**: Admin manually verifies payments using account name and last 4 digits
+3. **No Payment Gateway**: No third-party payment integration needed
+4. **Admin Editable**: Payment account details can be updated at `/admin/settings`
+5. **Order Tracking**: Payment info stored directly in orders table

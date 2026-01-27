@@ -19,13 +19,15 @@ class Product extends Model
         'is_active',
         'stock_quantity',
         'min_order_quantity',
-        'is_customizable',
+        'gender',
+        'uniform_type',
     ];
 
     protected $casts = [
         'base_price' => 'decimal:2',
         'is_active' => 'boolean',
-        'is_customizable' => 'boolean',
+        'gender' => 'string',
+        'uniform_type' => 'string',
     ];
 
     public function category()

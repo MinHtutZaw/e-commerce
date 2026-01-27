@@ -22,7 +22,8 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->integer('stock_quantity')->default(0);
             $table->integer('min_order_quantity')->default(1);
-            $table->boolean('is_customizable')->default(false);
+            $table->enum('gender', ['male', 'female', 'unisex'])->nullable();
+            $table->enum('uniform_type', ['school', 'college', 'university'])->nullable();
             $table->timestamps();
         });
     }

@@ -10,6 +10,8 @@ interface Product {
     type: string;
     price: number;
     image: string;
+    gender: 'male' | 'female' | 'unisex' | null;
+    uniform_type: 'school' | 'college' | 'university' | null;
     sizes: Array<{ size: string; price: number; available: boolean }>;
 }
 
@@ -19,6 +21,9 @@ interface Props {
 }
 
 export default function Products({ products: initialProducts, categories }: Props) {
+    const [selectedGender, setSelectedGender] = useState("");
+    const [selectedUniformType, setSelectedUniformType] = useState("");
+
     const [selectedType, setSelectedType] = useState("");
     const [selectedSize, setSelectedSize] = useState("");
     const [search, setSearch] = useState("");
@@ -26,7 +31,7 @@ export default function Products({ products: initialProducts, categories }: Prop
 
     const handleAddToCart = (product: Product) => {
         const size = selectedSizeForProduct[product.id] || product.sizes[0]?.size;
-        
+
         if (!size) {
             alert('Please select a size');
             return;
@@ -48,6 +53,8 @@ export default function Products({ products: initialProducts, categories }: Prop
         router.get('/products', {
             type: selectedType || undefined,
             size: selectedSize || undefined,
+            gender: selectedGender || undefined,
+            uniform_type: selectedUniformType || undefined,
             search: search || undefined,
         }, {
             preserveState: true,
@@ -66,6 +73,8 @@ export default function Products({ products: initialProducts, categories }: Prop
     const filteredProducts = initialProducts.filter((product) => {
         return (
             (!selectedType || product.type === selectedType) &&
+            (!selectedGender || product.gender === selectedGender) &&
+            (!selectedUniformType || product.uniform_type === selectedUniformType) &&
             (!selectedSize || product.sizes.some(s => s.size === selectedSize && s.available)) &&
             (!search || product.name.toLowerCase().includes(search.toLowerCase()))
         );
@@ -111,6 +120,35 @@ export default function Products({ products: initialProducts, categories }: Prop
                                 {categories.map((cat) => (
                                     <option key={cat.id} value={cat.name}>{cat.name}</option>
                                 ))}
+                            </select>
+
+                            <select
+                                value={selectedGender}
+                                onChange={(e) => {
+                                    setSelectedGender(e.target.value);
+                                    handleFilterChange();
+                                }}
+                                className="rounded-md border px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
+                            >
+                                <option value="">All Genders</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="unisex">Unisex</option>
+                            </select>
+
+
+                            <select
+                                value={selectedUniformType}
+                                onChange={(e) => {
+                                    setSelectedUniformType(e.target.value);
+                                    handleFilterChange();
+                                }}
+                                className="rounded-md border px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
+                            >
+                                <option value="">All Uniform Types</option>
+                                <option value="school">School</option>
+                                <option value="college">College</option>
+                                <option value="university">University</option>
                             </select>
 
                             <select
@@ -181,12 +219,12 @@ export default function Products({ products: initialProducts, categories }: Prop
 
                                     {/* Price */}
                                     <p className="mt-2 text-lg font-bold text-emerald-600">
-                                        ${selectedSizeForProduct[product.id] 
+                                        ${selectedSizeForProduct[product.id]
                                             ? product.sizes.find(s => s.size === selectedSizeForProduct[product.id])?.price || product.price
                                             : product.price}
                                     </p>
 
-                                    <button 
+                                    <button
                                         onClick={() => handleAddToCart(product)}
                                         className="mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-purple-600 py-2 text-sm font-medium text-white hover:bg-purple-700"
                                     >

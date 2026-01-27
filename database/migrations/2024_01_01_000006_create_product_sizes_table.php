@@ -19,7 +19,6 @@ return new class extends Migration
             $table->integer('stock_quantity')->default(0);
             $table->boolean('is_available')->default(true);
             $table->timestamps();
-            
             $table->unique(['product_id', 'size']);
         });
     }
