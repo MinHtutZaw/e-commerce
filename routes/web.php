@@ -36,6 +36,11 @@ Route::middleware(['auth'])->group(function () {
     
     // Custom Orders (auth required)
     Route::post('/custom-orders', [CustomOrderController::class, 'store'])->name('custom-orders.store');
+    
+    // Customer Profile routes
+    Route::get('/customer/profile', [\App\Http\Controllers\CustomerProfileController::class, 'index'])->name('customer.profile');
+    Route::post('/customer/profile/update', [\App\Http\Controllers\CustomerProfileController::class, 'update'])->name('customer.profile.update');
+    Route::post('/customer/profile/password', [\App\Http\Controllers\CustomerProfileController::class, 'updatePassword'])->name('customer.profile.password');
 });
 
 

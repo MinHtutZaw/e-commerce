@@ -69,8 +69,17 @@ class OrderController extends Controller
 
             DB::commit();
 
-            return redirect()->route('orders.show', $order->id)
-                ->with('success', 'Order created successfully! Please proceed with payment.');
+            // Return checkout page directly with order data
+            return Inertia::render('landing/checkout', [
+                'order' => [
+                    'id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'total_amount' => $order->total_amount,
+                ],
+                'flash' => [
+                    'success' => 'Order created successfully! Please proceed with payment.',
+                ],
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors(['error' => 'Failed to create order: ' . $e->getMessage()]);

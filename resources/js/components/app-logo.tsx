@@ -9,7 +9,7 @@ export default function AppLogo() {
             <AppLogoIcon className="h-16 w-16 text-white" />
 
             {/* Brand name */}
-            <span className="hidden sm:block text-xl font-bold text-emerald-100">
+            <span className="hidden sm:block text-xl font-bold text-emerald-800">
                 EduFit
             </span>
         </div>

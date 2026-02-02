@@ -22,14 +22,34 @@ interface Props {
         order_number: string;
         total_amount: number;
     };
+    flash?: {
+        success?: string;
+        error?: string;
+    };
 }
 
-export default function Checkout({ order }: Props) {
+export default function Checkout({ order, flash }: Props) {
     const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
     const [bank, setBank] = useState<"KBZ" | "AYA">("KBZ");
     const [transactionId, setTransactionId] = useState<string>("");
     const [copied, setCopied] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        // Show flash messages
+        if (flash?.success) {
+            toast.success(flash.success, {
+                duration: 5000,
+                position: 'top-right',
+            });
+        }
+        if (flash?.error) {
+            toast.error(flash.error, {
+                duration: 5000,
+                position: 'top-right',
+            });
+        }
+    }, [flash]);
 
     useEffect(() => {
         // Fetch payment info from backend

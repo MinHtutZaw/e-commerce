@@ -183,26 +183,23 @@ export default function Cart({ items: initialItems, subtotal: initialSubtotal, t
                                 </div>
 
                                 <button 
-                                    onClick={() => {
-                                        // Create order from cart
-                                        router.post('/orders', {
-                                            notes: '',
-                                        }, {
-                                            onSuccess: () => {
-                                                // Will redirect to order details page
-                                            },
-                                            onError: (errors) => {
-                                                console.error('Order creation error:', errors);
-                                                toast.error('Failed to create order', {
-                                                    description: 'Please try again or contact support',
-                                                });
-                                            },
-                                        });
-                                    }}
-                                    className="mt-6 w-full rounded-md bg-purple-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-                                >
-                                    Checkout
-                                </button>
+                                   onClick={() => {
+                                       // Create order from cart, backend will redirect to checkout
+                                       router.post('/orders', {
+                                           notes: '',
+                                       }, {
+                                           onError: (errors) => {
+                                               console.error('Order creation error:', errors);
+                                               toast.error('Failed to create order', {
+                                                   description: 'Please try again or contact support',
+                                               });
+                                           },
+                                       });
+                                   }}
+                                   className="mt-6 w-full rounded-md bg-purple-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                               >
+                                   Proceed to Payment
+                               </button>
 
                                 <button onClick={() => router.visit('/products')} className="mt-3 w-full rounded-md border border-gray-300 bg-white py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
                                     Continue Shopping
