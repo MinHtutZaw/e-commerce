@@ -13,23 +13,17 @@ return new class extends Migration
     {
         Schema::create('cart_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade');
-            $table->string('session_id')->nullable();
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
-            $table->foreignId('product_size_id')->nullable()->constrained('product_sizes')->onDelete('cascade');
-            $table->string('size');
+            $table->foreignId('product_size_id')->constrained('product_sizes')->onDelete('cascade');
             $table->integer('quantity');
             $table->timestamps();
-            
-            $table->index('user_id');
-            $table->index('session_id');
-            $table->unique(['user_id', 'product_id', 'size'], 'user_product_size_unique');
-            $table->unique(['session_id', 'product_id', 'size'], 'session_product_size_unique');
+            $table->unique(['user_id', 'product_id', 'product_size_id'], 'user_product_size_unique');
         });
     }
 
     /**
-     * Reverse the migrations.
+ * Reverse the migrations.
      */
     public function down(): void
     {

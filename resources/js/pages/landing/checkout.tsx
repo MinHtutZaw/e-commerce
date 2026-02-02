@@ -3,11 +3,17 @@ import Navbar from "@/Components/common/Navbar";
 import { useState, useEffect } from "react";
 import { Copy, Check } from "lucide-react";
 import { router, usePage } from "@inertiajs/react";
+import { toast } from "sonner";
 
-interface PaymentInfo {
+interface PaymentMethod {
+    bank_name: string;
     account_name: string;
     account_number: string;
-    bank_name: string;
+}
+
+interface PaymentInfo {
+    KBZ: PaymentMethod;
+    AYA: PaymentMethod;
 }
 
 interface Props {
@@ -20,27 +26,28 @@ interface Props {
 
 export default function Checkout({ order }: Props) {
     const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
-    const [accountName, setAccountName] = useState<string>("");
+    const [bank, setBank] = useState<"KBZ" | "AYA">("KBZ");
     const [transactionId, setTransactionId] = useState<string>("");
     const [copied, setCopied] = useState(false);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         // Fetch payment info from backend
-        fetch('/api/payment-info')
+        fetch('/payment-info')
             .then(response => response.json())
             .then(data => {
                 setPaymentInfo(data);
-                setAccountName(data.account_name);
             })
             .catch(error => {
                 console.error('Error fetching payment info:', error);
             });
     }, []);
 
+    const currentPaymentMethod = paymentInfo ? paymentInfo[bank] : null;
+
     const handleCopy = () => {
-        if (paymentInfo) {
-            navigator.clipboard.writeText(paymentInfo.account_number);
+        if (currentPaymentMethod) {
+            navigator.clipboard.writeText(currentPaymentMethod.account_number);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         }
@@ -49,7 +56,7 @@ export default function Checkout({ order }: Props) {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         
-        if (!order || !accountName || transactionId.length !== 4) {
+        if (!order || !bank || transactionId.length !== 4) {
             return;
         }
 
@@ -57,17 +64,23 @@ export default function Checkout({ order }: Props) {
 
         router.post('/payments', {
             order_id: order.id,
-            account_name: accountName,
+            bank: bank,
             transaction_id: transactionId,
+            amount: order.total_amount,
         }, {
             preserveScroll: true,
             onSuccess: () => {
-                alert('Payment submitted successfully! We will verify and confirm your payment shortly.');
-                router.visit('/');
+                toast.success('Payment submitted successfully!', {
+                    description: 'Admin will verify your payment shortly',
+                });
+                router.visit('/orders');
             },
             onError: (errors) => {
                 console.error('Payment submission error:', errors);
-                alert('Failed to submit payment. Please try again.');
+                const errorMessage = typeof errors === 'object' ? Object.values(errors).flat().join(', ') : 'Failed to submit payment';
+                toast.error('Payment submission failed', {
+                    description: errorMessage,
+                });
             },
             onFinish: () => {
                 setLoading(false);
@@ -105,10 +118,13 @@ export default function Checkout({ order }: Props) {
                     {/* Page Header */}
                     <div className="mb-8 text-center">
                         <h1 className="text-3xl font-bold text-emerald-700 sm:text-4xl">
-                            Checkout
+                            Payment
                         </h1>
                         <p className="mt-2 text-sm text-gray-600 max-w-2xl mx-auto">
-                            Choose a payment method and submit your transaction details. We'll verify and add funds shortly.
+                            Order #{order.order_number} - Total: {order.total_amount.toLocaleString()} MMK
+                        </p>
+                        <p className="mt-1 text-xs text-gray-500">
+                            Transfer the amount to our bank account and submit your transaction details below.
                         </p>
                     </div>
 
@@ -121,89 +137,106 @@ export default function Checkout({ order }: Props) {
                                         Payment Information
                                     </h2>
                                     
-                                    <div className="space-y-4">
-                                        <div>
-                                            <h3 className="mb-3 text-sm font-semibold text-gray-900">
-                                                Transfer to the account below:
-                                            </h3>
+                                    {/* Bank Selection First */}
+                                    <div className="mb-4">
+                                        <label className="mb-2 block text-sm font-semibold text-gray-900">
+                                            Select Payment Method
+                                        </label>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => setBank('KBZ')}
+                                                className={`rounded-lg border-2 px-4 py-3 text-sm font-medium transition-all ${
+                                                    bank === 'KBZ'
+                                                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                                                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                                                }`}
+                                            >
+                                                KBZ Pay
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setBank('AYA')}
+                                                className={`rounded-lg border-2 px-4 py-3 text-sm font-medium transition-all ${
+                                                    bank === 'AYA'
+                                                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                                                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                                                }`}
+                                            >
+                                                AYA Pay
+                                            </button>
+                                        </div>
+                                    </div>
 
-                                            <div className="space-y-3">
-                                                <div>
-                                                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                                                        Bank
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={paymentInfo?.bank_name || ''}
-                                                        readOnly
-                                                        className="w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-900"
-                                                    />
-                                                </div>
+                                    {/* Show selected payment method details */}
+                                    {currentPaymentMethod && (
+                                        <div className="space-y-4 mt-4 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                                            <div>
+                                                <h3 className="mb-3 text-sm font-semibold text-gray-900">
+                                                    Transfer to this account:
+                                                </h3>
 
-                                                <div>
-                                                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                                                        Account name
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={paymentInfo?.account_name || ''}
-                                                        readOnly
-                                                        className="w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-900"
-                                                    />
-                                                </div>
-
-                                                <div>
-                                                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                                                        Account number
-                                                    </label>
-                                                    <div className="flex gap-2">
+                                                <div className="space-y-3">
+                                                    <div>
+                                                        <label className="mb-1 block text-xs font-medium text-gray-600">
+                                                            Payment Method
+                                                        </label>
                                                         <input
                                                             type="text"
-                                                            value={paymentInfo?.account_number || ''}
+                                                            value={currentPaymentMethod.bank_name}
                                                             readOnly
-                                                            className="flex-1 rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-900"
+                                                            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 font-medium"
                                                         />
-                                                        <button
-                                                            type="button"
-                                                            onClick={handleCopy}
-                                                            className="flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-                                                        >
-                                                            {copied ? (
-                                                                <>
-                                                                    <Check size={16} className="text-emerald-600" />
-                                                                    <span className="text-emerald-600">Copied!</span>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <Copy size={16} />
-                                                                    <span>Copy</span>
-                                                                </>
-                                                            )}
-                                                        </button>
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="mb-1 block text-xs font-medium text-gray-600">
+                                                            Account Name
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            value={currentPaymentMethod.account_name}
+                                                            readOnly
+                                                            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 font-medium"
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="mb-1 block text-xs font-medium text-gray-600">
+                                                            Account Number / Phone
+                                                        </label>
+                                                        <div className="flex gap-2">
+                                                            <input
+                                                                type="text"
+                                                                value={currentPaymentMethod.account_number}
+                                                                readOnly
+                                                                className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 font-medium"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleCopy}
+                                                                className="flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                                                            >
+                                                                {copied ? (
+                                                                    <>
+                                                                        <Check size={16} className="text-emerald-600" />
+                                                                        <span className="text-emerald-600">Copied!</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Copy size={16} />
+                                                                        <span>Copy</span>
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
 
-                                {/* Account Name Used for Transfer */}
-                                <div className="rounded-xl border bg-white p-6 shadow-sm">
-                                    <label className="mb-2 block text-sm font-semibold text-gray-900">
-                                        <span className="text-gray-900">သင်သုံးသော အကောင့်အမည်</span>{" "}
-                                        <span className="text-gray-500">(Account name you used for transfer)</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={accountName}
-                                        onChange={(e) => setAccountName(e.target.value)}
-                                        placeholder="Enter your account name"
-                                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-opacity-20"
-                                    />
-                                    <p className="mt-2 text-xs text-gray-500">
-                                        Enter the account name you used to transfer money
-                                    </p>
-                                </div>
 
                                 {/* Transaction ID */}
                                 <div className="rounded-xl border bg-white p-6 shadow-sm">
@@ -227,11 +260,15 @@ export default function Checkout({ order }: Props) {
                                 {/* Submit Button */}
                                 <button
                                     type="submit"
-                                    disabled={!accountName || transactionId.length !== 4 || loading}
+                                    disabled={!bank || transactionId.length !== 4 || loading}
                                     className="w-full rounded-md bg-purple-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:hover:bg-gray-400"
                                 >
                                     {loading ? 'Submitting...' : 'Submit Payment'}
                                 </button>
+                                
+                                <p className="text-center text-xs text-gray-500">
+                                    After submission, admin will verify your payment and update your order status.
+                                </p>
                             </div>
                         </div>
                     </form>

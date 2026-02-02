@@ -14,20 +14,16 @@ class Product extends Model
         'slug',
         'category_id',
         'description',
-        'base_price',
         'image',
         'is_active',
-        'stock_quantity',
         'min_order_quantity',
         'gender',
         'uniform_type',
     ];
 
     protected $casts = [
-        'base_price' => 'decimal:2',
         'is_active' => 'boolean',
-        'gender' => 'string',
-        'uniform_type' => 'string',
+        'min_order_quantity' => 'integer',
     ];
 
     public function category()

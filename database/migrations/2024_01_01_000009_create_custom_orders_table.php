@@ -19,15 +19,19 @@ return new class extends Migration
             $table->string('customer_phone');
             $table->text('delivery_address');
             $table->enum('customer_type', ['child', 'adult']);
-            $table->enum('gender', ['male', 'female', 'unisex']);
-            $table->string('uniform_type');
-            $table->integer('size_small_quantity')->default(0);
-            $table->integer('size_medium_quantity')->default(0);
-            $table->integer('size_large_quantity')->default(0);
+            $table->enum('gender', ['male', 'female', 'unisex'])->default('unisex');
+            $table->enum('uniform_type', [
+                'school',
+                'college', 
+                'university',
+            ])->default('school');
+           
             $table->text('notes')->nullable();
-            $table->enum('status', ['pending', 'quoted', 'accepted', 'rejected', 'completed'])->default('pending');
-            $table->decimal('quoted_price', 10, 2)->nullable();
+            $table->enum('status', ['pending', 'confirmed', 'processing'])->default('pending');
             $table->timestamps();
+            
+            $table->index('status');
+            $table->index(['gender', 'uniform_type']);
         });
     }
 

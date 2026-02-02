@@ -11,11 +11,13 @@ class CartItem extends Model
 
     protected $fillable = [
         'user_id',
-        'session_id',
         'product_id',
         'product_size_id',
-        'size',
         'quantity',
+    ];
+
+    protected $casts = [
+        'quantity' => 'integer',
     ];
 
     public function user()

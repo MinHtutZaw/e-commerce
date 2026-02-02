@@ -14,10 +14,13 @@ class Category extends Model
         'slug',
         'description',
         'image',
+        'gender',
+        'sort_order',
         'is_active',
     ];
 
     protected $casts = [
+        'sort_order' => 'integer',
         'is_active' => 'boolean',
     ];
 

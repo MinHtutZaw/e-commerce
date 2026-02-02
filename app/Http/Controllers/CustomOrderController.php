@@ -4,9 +4,33 @@ namespace App\Http\Controllers;
 
 use App\Models\CustomOrder;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class CustomOrderController extends Controller
 {
+    /**
+     * Display the custom order form
+     */
+    public function create()
+    {
+        return Inertia::render('landing/custom-order');
+    }
+
+    /**
+     * Display a listing of custom orders (Admin)
+     */
+    public function index()
+    {
+        $customOrders = CustomOrder::orderBy('created_at', 'desc')->paginate(10);
+
+        return Inertia::render('admin/custom-orders/index', [
+            'customOrders' => $customOrders,
+        ]);
+    }
+
+    /**
+     * Store a new custom order
+     */
     public function store(Request $request)
     {
         $request->validate([
@@ -42,6 +66,24 @@ class CustomOrderController extends Controller
             'success' => true,
             'message' => 'Custom order submitted successfully!',
             'order' => $customOrder,
+        ]);
+    }
+
+    /**
+     * Update the status of a custom order (Admin)
+     */
+    public function updateStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:pending,processing,completed,cancelled',
+        ]);
+
+        $customOrder = CustomOrder::findOrFail($id);
+        $customOrder->update(['status' => $request->status]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status updated successfully!',
         ]);
     }
 }

@@ -17,8 +17,12 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->text('description')->nullable();
             $table->string('image')->nullable();
+            $table->enum('gender', ['male', 'female', 'unisex'])->default('unisex');
+            $table->integer('sort_order')->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+            $table->index('gender');
+            $table->index(['is_active', 'sort_order']);
         });
     }
 

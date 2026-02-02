@@ -1,17 +1,19 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { router } from '@inertiajs/react'
+import { toast } from 'sonner'
 
-export default function CustomOrderModal({ isOpen, onClose }) {
+export default function CustomOrderModal({ isOpen, onClose, auth }) {
     const [step, setStep] = useState(1)
     const [errors, setErrors] = useState({})
+    const [submitting, setSubmitting] = useState(false)
 
     const [form, setForm] = useState({
         customerType: '',
         gender: '',
         uniformType: '',
         notes: '',
-        name: '',
-        email: '',
+        name: auth?.user?.name || '',
+        email: auth?.user?.email || '',
         phone: '',
         address: '',
         sizes: {
@@ -20,6 +22,17 @@ export default function CustomOrderModal({ isOpen, onClose }) {
             large: ''
         }
     })
+
+    // Update form when auth changes
+    useEffect(() => {
+        if (auth?.user) {
+            setForm(prev => ({
+                ...prev,
+                name: auth.user.name || '',
+                email: auth.user.email || '',
+            }))
+        }
+    }, [auth])
 
     if (!isOpen) return null
 
@@ -64,7 +77,7 @@ export default function CustomOrderModal({ isOpen, onClose }) {
         setStep((prev) => Math.max(prev - 1, 1))
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
         // Validate all steps before submission
         const step1Errors = validateStep1()
@@ -76,6 +89,8 @@ export default function CustomOrderModal({ isOpen, onClose }) {
             setStep(1) // Go back to first step with errors
             return
         }
+
+        setSubmitting(true)
 
         // Submit form data to backend
         router.post('/custom-orders', {
@@ -92,16 +107,19 @@ export default function CustomOrderModal({ isOpen, onClose }) {
             notes: form.notes,
         }, {
             onSuccess: () => {
-                alert('Custom order submitted successfully! We will contact you soon with a quote.')
+                toast.success('Custom order submitted successfully!', {
+                    description: 'We will contact you soon with a quote.',
+                    duration: 4000,
+                })
                 onClose()
-                // Reset form
+                // Reset form (keep user name and email)
                 setForm({
                     customerType: '',
                     gender: '',
                     uniformType: '',
                     notes: '',
-                    name: '',
-                    email: '',
+                    name: auth?.user?.name || '',
+                    email: auth?.user?.email || '',
                     phone: '',
                     address: '',
                     sizes: {
@@ -111,10 +129,14 @@ export default function CustomOrderModal({ isOpen, onClose }) {
                     }
                 })
                 setStep(1)
+                setSubmitting(false)
             },
             onError: (errors) => {
                 console.error('Submission error:', errors)
-                alert('Failed to submit order. Please try again.')
+                toast.error('Failed to submit order', {
+                    description: 'Please check the form and try again.',
+                })
+                setSubmitting(false)
             },
         })
     }
@@ -479,9 +501,17 @@ export default function CustomOrderModal({ isOpen, onClose }) {
                         <button
                             type="button"
                             onClick={handleSubmit}
-                            className="px-6 py-3 rounded-lg bg-gradient-to-r from-green-600 to-green-700 text-white font-medium transition-all hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-900 shadow-lg shadow-green-500/30"
+                            disabled={submitting}
+                            className="px-6 py-3 rounded-lg bg-gradient-to-r from-green-600 to-green-700 text-white font-medium transition-all hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-900 shadow-lg shadow-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         >
-                            Submit Order
+                            {submitting ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    Submitting...
+                                </>
+                            ) : (
+                                'Submit Order'
+                            )}
                         </button>
                     )}
                 </div>

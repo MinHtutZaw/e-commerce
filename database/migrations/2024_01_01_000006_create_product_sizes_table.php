@@ -14,12 +14,13 @@ return new class extends Migration
         Schema::create('product_sizes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
-            $table->string('size'); // S, M, L, XL, XXL
-            $table->decimal('price_adjustment', 10, 2)->default(0);
+            $table->string('size'); // XS, S, M, L, XL, XXL, XXXL, or numeric sizes like 28, 30, 32, etc.
+            $table->integer('price')->default(0);
             $table->integer('stock_quantity')->default(0);
             $table->boolean('is_available')->default(true);
             $table->timestamps();
             $table->unique(['product_id', 'size']);
+            $table->index(['product_id', 'is_available']);
         });
     }
 

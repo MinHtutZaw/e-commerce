@@ -17,14 +17,22 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->foreignId('category_id')->constrained('categories')->onDelete('cascade');
             $table->text('description')->nullable();
-            $table->decimal('base_price', 10, 2);
             $table->string('image')->nullable();
             $table->boolean('is_active')->default(true);
-            $table->integer('stock_quantity')->default(0);
             $table->integer('min_order_quantity')->default(1);
-            $table->enum('gender', ['male', 'female', 'unisex'])->nullable();
-            $table->enum('uniform_type', ['school', 'college', 'university'])->nullable();
+            $table->enum('gender', ['male', 'female', 'unisex'])->default('unisex');
+            $table->enum('uniform_type', [
+                'school',
+                'college', 
+                'university',
+                'other'
+            ])->default('school');
             $table->timestamps();
+            
+            // Add indexes for better filtering performance
+            $table->index('gender');
+            $table->index('uniform_type');
+            $table->index(['gender', 'uniform_type', 'is_active']);
         });
     }
 

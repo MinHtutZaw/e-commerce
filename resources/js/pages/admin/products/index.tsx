@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Trash2, SquarePen, Plus, Package, Image as ImageIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 
 import {
     Drawer,
@@ -22,31 +23,41 @@ interface Category {
     name: string;
 }
 
+interface ProductSize {
+    id: number;
+    size: string;
+    price: number;
+    stock_quantity: number;
+    is_available: boolean;
+}
+
 interface Product {
     id: number;
     name: string;
     slug: string;
     category?: Category;
     description: string | null;
-    base_price: number;
     image: string | null;
     is_active: boolean;
-    stock_quantity: number;
     min_order_quantity: number;
-
-    gender?: 'male' | 'female' | 'unisex' | null;
-    uniform_type?: 'school' | 'college' | 'university' | null;
+    gender: 'male' | 'female' | 'unisex';
+    uniform_type: 'school' | 'college' | 'university' | 'other';
+    sizes: ProductSize[];
 }
 
 interface PageProps {
     products: {
         data: Product[];
     };
+    flash?: {
+        message?: string;
+        error?: string;
+    };
     [key: string]: unknown;
 }
 
 export default function Index() {
-    const { products } = usePage<PageProps>().props;
+    const { products, flash } = usePage<PageProps>().props;
     // Drawer state
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [categoryForm, setCategoryForm] = useState({
@@ -55,6 +66,16 @@ export default function Index() {
         image: null as File | null,
         is_active: true,
     });
+
+    // Show flash messages
+    useEffect(() => {
+        if (flash?.message) {
+            toast.success(flash.message);
+        }
+        if (flash?.error) {
+            toast.error(flash.error);
+        }
+    }, [flash]);
 
     const handleDelete = (id: number) => {
         if (confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
@@ -81,7 +102,7 @@ export default function Index() {
     const handleCategoryChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setCategoryForm({ ...categoryForm, [e.target.name]: e.target.value });
     };
-
+    
 
     return (
         <AppLayout>
@@ -112,7 +133,8 @@ export default function Index() {
                     {/* Drawer for Adding Category */}
                     <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
                         {/* Optional: DrawerTrigger if you want a button inside Drawer itself */}
-                        <DrawerContent className="h-screen max-w-full w-full sm:max-w-2xl">
+                        <DrawerContent className="h-screen w-full max-w-full sm:max-w-full">
+
                             <DrawerHeader>
                                 <DrawerTitle>Add New Category</DrawerTitle>
                                 <DrawerDescription>
@@ -188,7 +210,7 @@ export default function Index() {
                     <TableBody>
                         {products.data.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={6} className="h-32 text-center">
+                                <TableCell colSpan={7} className="h-32 text-center">
                                     <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
                                         <Package className="w-12 h-12 mb-2 opacity-50" />
                                         <p className="text-sm font-medium">No products found</p>
@@ -230,22 +252,42 @@ export default function Index() {
                                         </span>
                                     </TableCell>
                                     <TableCell>
-                                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                            {product.base_price.toLocaleString()} MMK
-                                        </span>
+                                        {product.sizes && product.sizes.length > 0 ? (
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                                    From {Math.min(...product.sizes.map(s => s.price)).toLocaleString()} MMK
+                                                </span>
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                                    {product.sizes.length} size{product.sizes.length !== 1 ? 's' : ''}
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-xs text-gray-500 dark:text-gray-400">No sizes</span>
+                                        )}
                                     </TableCell>
                                     <TableCell>
-                                        <div className="flex items-center gap-1">
-                                            <span className={`text-sm font-medium ${product.stock_quantity > 10
-                                                ? 'text-green-600 dark:text-green-400'
-                                                : product.stock_quantity > 0
-                                                    ? 'text-amber-600 dark:text-amber-400'
-                                                    : 'text-red-600 dark:text-red-400'
-                                                }`}>
-                                                {product.stock_quantity}
-                                            </span>
-                                            <span className="text-xs text-gray-500 dark:text-gray-400">units</span>
-                                        </div>
+                                        {product.sizes && product.sizes.length > 0 ? (
+                                            <div className="flex items-center gap-1">
+                                                {(() => {
+                                                    const totalStock = product.sizes.reduce((sum, size) => sum + size.stock_quantity, 0);
+                                                    return (
+                                                        <>
+                                                            <span className={`text-sm font-medium ${totalStock > 10
+                                                                ? 'text-green-600 dark:text-green-400'
+                                                                : totalStock > 0
+                                                                    ? 'text-amber-600 dark:text-amber-400'
+                                                                    : 'text-red-600 dark:text-red-400'
+                                                                }`}>
+                                                                {totalStock}
+                                                            </span>
+                                                            <span className="text-xs text-gray-500 dark:text-gray-400">units</span>
+                                                        </>
+                                                    );
+                                                })()}
+                                            </div>
+                                        ) : (
+                                            <span className="text-xs text-gray-500 dark:text-gray-400">-</span>
+                                        )}
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-2">

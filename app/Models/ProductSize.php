@@ -12,13 +12,14 @@ class ProductSize extends Model
     protected $fillable = [
         'product_id',
         'size',
-        'price_adjustment',
+        'price',
         'stock_quantity',
         'is_available',
     ];
 
     protected $casts = [
-        'price_adjustment' => 'decimal:2',
+        'price' => 'integer',
+        'stock_quantity' => 'integer',
         'is_available' => 'boolean',
     ];
 

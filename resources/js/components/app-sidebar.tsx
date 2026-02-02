@@ -5,19 +5,18 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, BriefcaseIcon, Folder, LayoutGrid, Library, Package, Users } from 'lucide-react';
+import { BookOpen, BriefcaseIcon, Folder, LayoutGrid, Library, Package, Users, ClipboardList } from 'lucide-react';
 import AppLogo from './app-logo';
-import { dashboard } from '@/routes';
 
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
-        href: dashboard(),
+        href: '/dashboard',
         icon: LayoutGrid,
     },
     {
-        title: 'Customer',
-        href: '/customers',
+        title: 'Customers',
+        href: '/admin/customers',
         icon: Users,
     },
     {
@@ -25,13 +24,16 @@ const mainNavItems: NavItem[] = [
         href: '/admin/products',
         icon: BriefcaseIcon,
     },
-
     {
         title: 'Orders',
-        href: '/orders',
-        icon:   Package ,
+        href: '/customer/orders',
+        icon: Package,
     },
-   
+    {
+        title: 'Custom Orders',
+        href: '/admin/custom-orders',
+        icon: ClipboardList,
+    },
 ];
 
 
@@ -43,7 +45,7 @@ export function AppSidebar() {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
+                            <Link href="/admin/dashboard" prefetch>
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>

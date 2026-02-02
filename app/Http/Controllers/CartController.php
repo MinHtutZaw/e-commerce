@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CartItem;
 use App\Models\Product;
+use App\Models\ProductSize;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -12,35 +13,37 @@ class CartController extends Controller
 {
     public function index()
     {
-        $cartItems = $this->getCartItems();
+        $cartItems = CartItem::where('user_id', Auth::id())
+            ->with(['product.category', 'productSize'])
+            ->get();
 
         $items = $cartItems->map(function ($item) {
             $product = $item->product;
-            $unitPrice = (float) $product->base_price;
-            
-            if ($item->productSize) {
-                $unitPrice += (float) $item->productSize->price_adjustment;
-            }
+            $productSize = $item->productSize;
+            $unitPrice = $productSize ? $productSize->price : 0;
 
             return [
                 'id' => $item->id,
                 'product_id' => $product->id,
+                'product_size_id' => $item->product_size_id,
                 'name' => $product->name,
-                'size' => $item->size,
+                'size' => $productSize ? $productSize->size : 'N/A',
                 'quantity' => $item->quantity,
                 'unit_price' => $unitPrice,
                 'total_price' => $unitPrice * $item->quantity,
                 'image' => $product->image ?? '/img/slider-1.png',
+                'gender' => $product->gender,
+                'uniform_type' => $product->uniform_type,
             ];
         })->toArray();
 
         $subtotal = collect($items)->sum('total_price');
-        $total = $subtotal; // Add shipping if needed
+        $total = $subtotal;
 
         return Inertia::render('landing/cart', [
             'items' => $items,
-            'subtotal' => (float) $subtotal,
-            'total' => (float) $total,
+            'subtotal' => $subtotal,
+            'total' => $total,
         ]);
     }
 
@@ -48,23 +51,33 @@ class CartController extends Controller
     {
         $request->validate([
             'product_id' => 'required|exists:products,id',
-            'size' => 'required|string',
+            'product_size_id' => 'required|exists:product_sizes,id',
             'quantity' => 'required|integer|min:1',
         ]);
 
-        $product = Product::findOrFail($request->product_id);
+        // Verify product_size belongs to product
+        $productSize = ProductSize::where('id', $request->product_size_id)
+            ->where('product_id', $request->product_id)
+            ->where('is_available', true)
+            ->firstOrFail();
 
-        $cartItem = CartItem::updateOrCreate(
-            [
+        $cartItem = CartItem::where('user_id', Auth::id())
+            ->where('product_id', $request->product_id)
+            ->where('product_size_id', $request->product_size_id)
+            ->first();
+
+        if ($cartItem) {
+            $cartItem->update([
+                'quantity' => $cartItem->quantity + $request->quantity,
+            ]);
+        } else {
+            CartItem::create([
                 'user_id' => Auth::id(),
-                'session_id' => Auth::check() ? null : session()->getId(),
                 'product_id' => $request->product_id,
-                'size' => $request->size,
-            ],
-            [
+                'product_size_id' => $request->product_size_id,
                 'quantity' => $request->quantity,
-            ]
-        );
+            ]);
+        }
 
         return back()->with('success', 'Item added to cart');
     }
@@ -76,7 +89,7 @@ class CartController extends Controller
         ]);
 
         // Check ownership
-        if (!$this->canModifyCartItem($cartItem)) {
+        if ($cartItem->user_id !== Auth::id()) {
             return back()->withErrors(['error' => 'Unauthorized']);
         }
 
@@ -88,7 +101,7 @@ class CartController extends Controller
     public function destroy(CartItem $cartItem)
     {
         // Check ownership
-        if (!$this->canModifyCartItem($cartItem)) {
+        if ($cartItem->user_id !== Auth::id()) {
             return back()->withErrors(['error' => 'Unauthorized']);
         }
 
@@ -97,25 +110,10 @@ class CartController extends Controller
         return back()->with('success', 'Item removed from cart');
     }
 
-    private function getCartItems()
+    public function count()
     {
-        if (Auth::check()) {
-            return CartItem::where('user_id', Auth::id())
-                ->with(['product', 'productSize'])
-                ->get();
-        }
-
-        return CartItem::where('session_id', session()->getId())
-            ->with(['product', 'productSize'])
-            ->get();
-    }
-
-    private function canModifyCartItem(CartItem $cartItem): bool
-    {
-        if (Auth::check()) {
-            return $cartItem->user_id === Auth::id();
-        }
-
-        return $cartItem->session_id === session()->getId();
+        $count = CartItem::where('user_id', Auth::id())->sum('quantity');
+        
+        return response()->json(['count' => $count]);
     }
 }

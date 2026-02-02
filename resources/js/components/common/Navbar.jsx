@@ -1,6 +1,5 @@
 
 import AppLogo from '@/components/app-logo';
-import { dashboard, login, register } from '@/routes';
 import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react'
 import CustomOrderModal from '@/components/common/CustomOrderModal'
@@ -10,7 +9,7 @@ import { ShoppingCart } from 'lucide-react';
 
 
 export default function Navbar() {
-    const { auth } = usePage().props;
+    const { auth, cartCount } = usePage().props;
 
     const [openOrder, setOpenOrder] = useState(false);
 
@@ -62,18 +61,35 @@ export default function Navbar() {
                         </Link>
 
                         <button
-                            onClick={() => setOpenOrder(true)}
+                            onClick={() => {
+                                if (!auth.user) {
+                                    window.location.href = '/register';
+                                } else {
+                                    setOpenOrder(true);
+                                }
+                            }}
                             className="px-4 py-2 rounded-full text-white hover:bg-emerald-600 transition-colors duration-200"
                         >
                             Custom Order
                         </button>
 
-                        <Link
-                            href="/cart"
-                            className="px-4 py-2 rounded-full text-white hover:bg-emerald-700 transition-colors duration-200"
+                        <button
+                            onClick={() => {
+                                if (!auth.user) {
+                                    window.location.href = '/register';
+                                } else {
+                                    window.location.href = '/cart';
+                                }
+                            }}
+                            className="px-4 py-2 rounded-full text-white hover:bg-emerald-700 transition-colors duration-200 relative"
                         >
                             <ShoppingCart className="h-6 w-6 inline-block" />
-                        </Link>
+                            {auth.user && cartCount > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                                    {cartCount > 99 ? '99+' : cartCount}
+                                </span>
+                            )}
+                        </button>
                     </nav>
 
 
@@ -84,7 +100,7 @@ export default function Navbar() {
                         <div className="flex items-center gap-3">
                             {auth.user ? (
                                 <Link
-                                    href={dashboard()}
+                                    href="/dashboard"
                                     className="rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
                                 >
                                     Dashboard
@@ -92,13 +108,13 @@ export default function Navbar() {
                             ) : (
                                 <>
                                     <Link
-                                        href={login()}
+                                        href="/login"
                                         className="text-sm font-medium text-white  hover:text-emerald-200 dark:text-gray-300 dark:hover:text-purple-400"
                                     >
                                         Log in
                                     </Link>
                                     <Link
-                                        href={register()}
+                                        href="/register"
                                         className="rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
                                     >
                                         Register
@@ -110,10 +126,13 @@ export default function Navbar() {
 
                 </div>
             </header>
-            <CustomOrderModal
-                isOpen={openOrder}
-                onClose={() => setOpenOrder(false)}
-            />
+            {auth.user && (
+                <CustomOrderModal
+                    isOpen={openOrder}
+                    onClose={() => setOpenOrder(false)}
+                    auth={auth}
+                />
+            )}
 
 
         </>

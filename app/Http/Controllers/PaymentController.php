@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
-use App\Models\Setting;
+use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -13,33 +13,64 @@ class PaymentController extends Controller
     {
         $request->validate([
             'order_id' => 'required|exists:orders,id',
-            'account_name' => 'required|string|max:255',
-            'transaction_id' => 'required|string|max:4',
+            'bank' => 'required|in:KBZ,AYA',
+            'transaction_id' => 'required|string|size:4',
+            'amount' => 'required|integer|min:0',
         ]);
 
         $order = Order::findOrFail($request->order_id);
 
-        // Check if user owns the order or is guest
-        if (Auth::check() && $order->user_id !== Auth::id()) {
+        // Check if user owns the order
+        if ($order->user_id !== Auth::id()) {
             return back()->withErrors(['error' => 'Unauthorized']);
         }
 
-        // Update order payment status
-        $order->update([
-            'payment_status' => 'pending',
-            'payment_method' => $request->account_name,
+        // Verify amount matches order total
+        if ($request->amount != $order->total_amount) {
+            return back()->withErrors(['error' => 'Payment amount does not match order total']);
+        }
+
+        // Check if payment already exists
+        $existingPayment = Payment::where('order_id', $order->id)
+            ->whereIn('status', ['pending', 'paid'])
+            ->first();
+
+        if ($existingPayment) {
+            return back()->withErrors(['error' => 'Payment already submitted for this order']);
+        }
+
+        // Create payment record
+        Payment::create([
+            'order_id' => $order->id,
+            'bank' => $request->bank,
             'transaction_id' => $request->transaction_id,
+            'amount' => $request->amount,
+            'status' => 'pending',
         ]);
 
-        return back()->with('success', 'Payment submitted successfully! We will verify and confirm your payment shortly.');
+        // Update order payment status
+        $order->update(['payment_status' => 'pending']);
+
+        return redirect()->route('orders.show', $order->id)
+            ->with('success', 'Payment submitted successfully! Admin will verify your payment shortly.');
     }
 
     public function getPaymentInfo()
     {
-        return response()->json([
-            'account_name' => Setting::get('payment_account_name', 'EduFit'),
-            'account_number' => Setting::get('payment_account_number', '09876543210'),
-            'bank_name' => Setting::get('payment_bank_name', 'KBZ Bank'),
-        ]);
+        // Payment methods with their account information
+        $paymentMethods = [
+            'KBZ' => [
+                'bank_name' => 'KBZ Pay',
+                'account_name' => 'EduFit Uniforms',
+                'account_number' => '09123456789',
+            ],
+            'AYA' => [
+                'bank_name' => 'AYA Pay',
+                'account_name' => 'EduFit Uniforms',
+                'account_number' => '09987654321',
+            ],
+        ];
+
+        return response()->json($paymentMethods);
     }
 }

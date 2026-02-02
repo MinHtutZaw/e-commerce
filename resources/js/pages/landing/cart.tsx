@@ -3,16 +3,20 @@ import Navbar from "@/Components/common/Navbar";
 import { router } from "@inertiajs/react";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 interface CartItem {
     id: number;
     product_id: number;
+    product_size_id: number;
     name: string;
     size: string;
     quantity: number;
     unit_price: number;
     total_price: number;
     image: string;
+    gender?: string;
+    uniform_type?: string;
 }
 
 interface Props {
@@ -121,25 +125,25 @@ export default function Cart({ items: initialItems, subtotal: initialSubtotal, t
                                                     Size: {item.size}
                                                 </p>
                                                 <p className="mt-1 text-base font-semibold text-emerald-600">
-                                                    ${item.unit_price.toFixed(2)}
+                                                    {item.unit_price.toLocaleString()} MMK
                                                 </p>
                                             </div>
 
                                             <div className="flex items-center gap-4">
                                                 <div className="flex items-center gap-2">
-                                                    <label className="sr-only">Quantity</label>
+                                                    <label className="text-sm font-medium text-gray-700 mr-2">Qty:</label>
                                                     <input
                                                         type="number"
                                                         min="1"
                                                         value={item.quantity}
                                                         onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value))}
-                                                        className="w-20 rounded-md border border-gray-300 px-3 py-2 text-center text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-opacity-20"
+                                                        className="w-20 rounded-md border border-gray-300 bg-white px-3 py-2 text-center text-sm text-gray-900 font-medium focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-opacity-20"
                                                     />
                                                 </div>
 
-                                                <div className="w-20 text-right">
+                                                <div className="w-24 text-right">
                                                     <p className="text-base font-semibold text-gray-900">
-                                                        ${item.total_price.toFixed(2)}
+                                                        {item.total_price.toLocaleString()} MMK
                                                     </p>
                                                 </div>
 
@@ -167,13 +171,13 @@ export default function Cart({ items: initialItems, subtotal: initialSubtotal, t
                                 <div className="space-y-4">
                                     <div className="flex justify-between text-sm text-gray-600">
                                         <span>Subtotal</span>
-                                        <span className="font-medium text-gray-900">${subtotal.toFixed(2)}</span>
+                                        <span className="font-medium text-gray-900">{subtotal.toLocaleString()} MMK</span>
                                     </div>
 
                                     <div className="border-t border-gray-200 pt-4">
                                         <div className="flex justify-between">
                                             <span className="text-lg font-semibold text-gray-900">Total</span>
-                                            <span className="text-lg font-bold text-emerald-600">${total.toFixed(2)}</span>
+                                            <span className="text-lg font-bold text-emerald-600">{total.toLocaleString()} MMK</span>
                                         </div>
                                     </div>
                                 </div>
@@ -182,24 +186,22 @@ export default function Cart({ items: initialItems, subtotal: initialSubtotal, t
                                     onClick={() => {
                                         // Create order from cart
                                         router.post('/orders', {
-                                            customer_name: 'Guest User', // You can get from user or form
-                                            customer_email: 'guest@example.com',
-                                            customer_phone: '',
-                                            delivery_address: '',
+                                            notes: '',
                                         }, {
-                                            onSuccess: (page: any) => {
-                                                // Redirect to checkout with order
-                                                const orderId = (page.props.order as { id: number })?.id;
-                                                router.visit('/checkout?order=' + orderId);
+                                            onSuccess: () => {
+                                                // Will redirect to order details page
                                             },
                                             onError: (errors) => {
-                                                alert('Please fill in customer details first');
+                                                console.error('Order creation error:', errors);
+                                                toast.error('Failed to create order', {
+                                                    description: 'Please try again or contact support',
+                                                });
                                             },
                                         });
                                     }}
                                     className="mt-6 w-full rounded-md bg-purple-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
                                 >
-                                    Proceed to Checkout
+                                    Checkout
                                 </button>
 
                                 <button onClick={() => router.visit('/products')} className="mt-3 w-full rounded-md border border-gray-300 bg-white py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
