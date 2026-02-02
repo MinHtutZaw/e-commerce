@@ -43,6 +43,11 @@ class CustomResetPasswordNotification extends Notification
             'email' => $notifiable->getEmailForPasswordReset(),
         ], false));
 
+        // Convert logo to base64 for email embedding
+        $logoPath = public_path('img/logo.png');
+        $logoData = base64_encode(file_get_contents($logoPath));
+        $logoSrc = 'data:image/png;base64,' . $logoData;
+
         return (new MailMessage)
             ->subject('Reset Your EduFit Password')
             ->greeting('Hello ' . $notifiable->name . '!')
