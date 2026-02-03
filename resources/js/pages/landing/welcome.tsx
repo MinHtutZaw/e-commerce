@@ -20,7 +20,7 @@ export default function Home() {
             `}</style>
         </Head>
 
-            <div className="min-h-screen bg-white text-[#1b1b18]">
+            <div className="min-h-screen bg-white dark:bg-black text-[#1b1b18] dark:text-white">
 
                 <Navbar />
 

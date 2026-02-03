@@ -3,6 +3,15 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { ArrowLeft, Package, CreditCard, Clock, CheckCircle, XCircle, Truck, User, Edit2 } from 'lucide-react';
 import { useState } from 'react';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 interface ProductSize {
     id: number;
@@ -57,9 +66,12 @@ interface Props {
     userRole: 'customer' | 'admin';
 }
 
+type PaymentModalPayload = { paymentId: number; status: 'paid' | 'failed'; label: string } | null;
+
 export default function OrderShow({ order, userRole }: Props) {
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState(order.status);
+    const [paymentModal, setPaymentModal] = useState<PaymentModalPayload>(null);
     
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
@@ -83,14 +95,22 @@ export default function OrderShow({ order, userRole }: Props) {
         });
     };
 
-    const handleUpdatePaymentStatus = (paymentId: number, status: string) => {
-        if (confirm(`Are you sure you want to mark this payment as ${status}?`)) {
-            router.put(`/payments/${paymentId}/status`, {
-                status: status,
-            }, {
-                preserveScroll: true,
-            });
-        }
+    const openPaymentModal = (paymentId: number, status: 'paid' | 'failed') => {
+        setPaymentModal({
+            paymentId,
+            status,
+            label: status === 'paid' ? 'Verify payment' : 'Reject payment',
+        });
+    };
+
+    const handleConfirmPaymentAction = () => {
+        if (!paymentModal) return;
+        router.put(`/payments/${paymentModal.paymentId}/status`, {
+            status: paymentModal.status,
+        }, {
+            preserveScroll: true,
+            onSuccess: () => setPaymentModal(null),
+        });
     };
 
     const statusConfig = {
@@ -127,20 +147,25 @@ export default function OrderShow({ order, userRole }: Props) {
     };
 
     const paymentStatusConfig = {
+        unpaid: {
+            color: 'bg-gray-100 text-gray-800 border-gray-200',
+            icon: Clock,
+            label: 'Unpaid'
+        },
         pending: { 
             color: 'bg-yellow-100 text-yellow-800 border-yellow-200', 
             icon: Clock,
-            label: 'Pending'
+            label: 'Submitted'
         },
         paid: { 
             color: 'bg-green-100 text-green-800 border-green-200', 
             icon: CheckCircle,
-            label: 'Paid'
+            label: 'Verified'
         },
         failed: { 
             color: 'bg-red-100 text-red-800 border-red-200', 
             icon: XCircle,
-            label: 'Failed'
+            label: 'Rejected'
         },
         refunded: {
             color: 'bg-gray-100 text-gray-800 border-gray-200',
@@ -148,6 +173,9 @@ export default function OrderShow({ order, userRole }: Props) {
             label: 'Refunded'
         }
     };
+
+    const orderPaymentStatus = (order.payment_status || 'unpaid') as keyof typeof paymentStatusConfig;
+    const currentOrderPaymentConfig = paymentStatusConfig[orderPaymentStatus] || paymentStatusConfig.unpaid;
 
     const currentStatus = statusConfig[order.status as keyof typeof statusConfig] || statusConfig.pending;
     const StatusIcon = currentStatus.icon;
@@ -158,10 +186,23 @@ export default function OrderShow({ order, userRole }: Props) {
 
     const currentPaymentStatus = latestPayment 
         ? paymentStatusConfig[latestPayment.status as keyof typeof paymentStatusConfig] || paymentStatusConfig.pending
-        : null;
+        : (order.payment_status ? paymentStatusConfig[order.payment_status as keyof typeof paymentStatusConfig] : paymentStatusConfig.unpaid);
     const PaymentIcon = currentPaymentStatus?.icon;
 
     const canPay = !latestPayment || latestPayment.status === 'failed' || latestPayment.status === 'pending';
+
+    // Admin: order flow is pending → processing → delivered
+    const paymentVerified = order.payment_status === 'paid';
+    const hasPendingPayment = latestPayment?.status === 'pending';
+    const adminOrderNextAction = userRole === 'admin' && order.status !== 'cancelled'
+        ? (order.status === 'pending' && paymentVerified ? 'processing'
+            : order.status === 'processing' ? 'delivered'
+            : null)
+        : null;
+
+    const handleOrderAction = (nextStatus: string) => {
+        router.put(`/orders/${order.id}/status`, { status: nextStatus }, { preserveScroll: true });
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -300,16 +341,16 @@ export default function OrderShow({ order, userRole }: Props) {
                                                 {userRole === 'admin' && payment.status === 'pending' && (
                                                     <div className="flex gap-2 border-t pt-3">
                                                         <button
-                                                            onClick={() => handleUpdatePaymentStatus(payment.id, 'paid')}
+                                                            onClick={() => openPaymentModal(payment.id, 'paid')}
                                                             className="flex-1 rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700"
                                                         >
-                                                            Approve Payment
+                                                            Verify payment
                                                         </button>
                                                         <button
-                                                            onClick={() => handleUpdatePaymentStatus(payment.id, 'failed')}
+                                                            onClick={() => openPaymentModal(payment.id, 'failed')}
                                                             className="flex-1 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
                                                         >
-                                                            Reject Payment
+                                                            Reject payment
                                                         </button>
                                                     </div>
                                                 )}
@@ -385,17 +426,51 @@ export default function OrderShow({ order, userRole }: Props) {
                                             {currentStatus.label}
                                         </span>
                                     </div>
-                                    {currentPaymentStatus && (
-                                        <div>
-                                            <p className="text-xs text-gray-500 mb-2">Payment Status</p>
-                                            <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium ${currentPaymentStatus.color}`}>
-                                                <PaymentIcon className="h-4 w-4" />
-                                                {currentPaymentStatus.label}
-                                            </span>
-                                        </div>
-                                    )}
+                                    <div>
+                                        <p className="text-xs text-gray-500 mb-2">Payment Status</p>
+                                        <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium ${currentOrderPaymentConfig.color}`}>
+                                            {(() => {
+                                                const Icon = currentOrderPaymentConfig.icon;
+                                                return Icon ? <Icon className="h-4 w-4" /> : null;
+                                            })()}
+                                            {currentOrderPaymentConfig.label}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
+
+                            {/* Admin: Order next-step actions (buttons only, no dropdown) */}
+                            {userRole === 'admin' && order.status !== 'cancelled' && (
+                                <div className="rounded-lg border bg-white p-6 shadow-sm">
+                                    <h2 className="mb-3 text-lg font-semibold text-gray-900">Order Actions</h2>
+                                    {hasPendingPayment ? (
+                                        <p className="text-sm text-amber-700 mb-3">
+                                            Verify or reject the submitted payment first. Order status can advance only after payment is verified.
+                                        </p>
+                                    ) : adminOrderNextAction ? (
+                                        <div className="space-y-2">
+                                            {adminOrderNextAction === 'processing' && (
+                                                <button
+                                                    onClick={() => handleOrderAction('processing')}
+                                                    className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
+                                                >
+                                                    Start processing
+                                                </button>
+                                            )}
+                                            {adminOrderNextAction === 'delivered' && (
+                                                <button
+                                                    onClick={() => handleOrderAction('delivered')}
+                                                    className="w-full rounded-lg bg-green-600 py-2.5 text-sm font-medium text-white hover:bg-green-700"
+                                                >
+                                                    Mark delivered
+                                                </button>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-gray-500">No next action. Order is {order.status}.</p>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Order Summary */}
                             <div className="rounded-lg border bg-white p-6 shadow-sm">
@@ -440,6 +515,31 @@ export default function OrderShow({ order, userRole }: Props) {
                     </div>
                 </div>
             </div>
+
+            {/* Payment verify/reject confirmation modal */}
+            <Dialog open={!!paymentModal} onOpenChange={(open) => !open && setPaymentModal(null)}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>{paymentModal?.label ?? 'Confirm action'}</DialogTitle>
+                        <DialogDescription>
+                            {paymentModal?.status === 'paid'
+                                ? 'This will mark the payment as verified. The order can then be confirmed and processed.'
+                                : 'This will reject the payment. The customer may submit a new payment.'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button variant="outline" onClick={() => setPaymentModal(null)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleConfirmPaymentAction}
+                            className={paymentModal?.status === 'paid' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+                        >
+                            {paymentModal?.status === 'paid' ? 'Verify payment' : 'Reject payment'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

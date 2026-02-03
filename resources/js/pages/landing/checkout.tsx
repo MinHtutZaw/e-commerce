@@ -75,7 +75,7 @@ export default function Checkout({ order, flash }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (!order || !bank || transactionId.length !== 4) {
             return;
         }
@@ -133,19 +133,47 @@ export default function Checkout({ order, flash }: Props) {
     return (
         <>
             <Navbar />
-            <div className="min-h-screen bg-gray-50">
+            <div className="min-h-screen bg-gray-50 dark:bg-black">
                 <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
                     {/* Page Header */}
-                    <div className="mb-8 text-center">
-                        <h1 className="text-3xl font-bold text-emerald-700 sm:text-4xl">
-                            Payment
-                        </h1>
-                        <p className="mt-2 text-sm text-gray-600 max-w-2xl mx-auto">
-                            Order #{order.order_number} - Total: {order.total_amount.toLocaleString()} MMK
-                        </p>
-                        <p className="mt-1 text-xs text-gray-500">
-                            Transfer the amount to our bank account and submit your transaction details below.
-                        </p>
+                    <div className="mt-6 max-w-2xl mx-auto rounded-2xl border border-emerald-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md overflow-hidden">
+
+                        {/* Header strip */}
+                        <div className="bg-emerald-600 text-white px-6 py-3 text-sm font-semibold tracking-wide">
+                            PAYMENT SUMMARY
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-6 space-y-5">
+                            <div className="flex justify-between items-center">
+                                <div className="text-left">
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        Order Number
+                                    </p>
+                                    <p className="text-xl font-semibold text-gray-900 dark:text-white tracking-wide">
+                                        #{order.order_number}
+                                    </p>
+                                </div>
+
+                                <div className="text-right">
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        Total Amount
+                                    </p>
+                                    <p className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">
+                                        {order.total_amount.toLocaleString()} MMK
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Divider */}
+                            <div className="border-t border-emerald-100 dark:border-gray-700"></div>
+
+                            {/* Info Text */}
+                            <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+                                Transfer the amount to our bank account and submit your transaction
+                                details below to complete your order.
+                            </p>
+                        </div>
                     </div>
 
                     <form onSubmit={handleSubmit}>
@@ -156,7 +184,7 @@ export default function Checkout({ order, flash }: Props) {
                                     <h2 className="mb-4 text-xl font-semibold text-emerald-700">
                                         Payment Information
                                     </h2>
-                                    
+
                                     {/* Bank Selection First */}
                                     <div className="mb-4">
                                         <label className="mb-2 block text-sm font-semibold text-gray-900">
@@ -166,22 +194,20 @@ export default function Checkout({ order, flash }: Props) {
                                             <button
                                                 type="button"
                                                 onClick={() => setBank('KBZ')}
-                                                className={`rounded-lg border-2 px-4 py-3 text-sm font-medium transition-all ${
-                                                    bank === 'KBZ'
+                                                className={`rounded-lg border-2 px-4 py-3 text-sm font-medium transition-all ${bank === 'KBZ'
                                                         ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
                                                         : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                                                }`}
+                                                    }`}
                                             >
                                                 KBZ Pay
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={() => setBank('AYA')}
-                                                className={`rounded-lg border-2 px-4 py-3 text-sm font-medium transition-all ${
-                                                    bank === 'AYA'
+                                                className={`rounded-lg border-2 px-4 py-3 text-sm font-medium transition-all ${bank === 'AYA'
                                                         ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
                                                         : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                                                }`}
+                                                    }`}
                                             >
                                                 AYA Pay
                                             </button>
@@ -285,7 +311,7 @@ export default function Checkout({ order, flash }: Props) {
                                 >
                                     {loading ? 'Submitting...' : 'Submit Payment'}
                                 </button>
-                                
+
                                 <p className="text-center text-xs text-gray-500">
                                     After submission, admin will verify your payment and update your order status.
                                 </p>

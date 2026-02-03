@@ -43,7 +43,7 @@ export default function AboutUs() {
       </section>
 
       {/* Mission & Vision */}
-      <section className="bg-gray-50 py-16">
+      <section className="bg-gray-50 dark:bg-gray-900 py-16">
         <div className="mx-auto max-w-6xl px-4 grid gap-12 lg:grid-cols-2">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Our Mission</h2>
@@ -61,7 +61,7 @@ export default function AboutUs() {
       </section>
 
       {/* Team Section */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-white dark:bg-black">
         <div className="mx-auto max-w-6xl px-4 text-center">
           <h2 className="text-3xl font-bold text-gray-900 mb-8">Meet Our Team</h2>
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">

@@ -56,6 +56,7 @@ class OrderController extends Controller
             $order = Order::create([
                 'user_id' => Auth::id(),
                 'status' => 'pending',
+                'payment_status' => 'unpaid',
                 'total_amount' => $totalAmount,
                 'notes' => $request->notes,
             ]);
@@ -94,16 +95,22 @@ class OrderController extends Controller
         if ($user->role === 'admin') {
             $order = Order::with(['user', 'items.product', 'items.productSize', 'payments'])
                 ->findOrFail($id);
+            
+            // Render admin view
+            return Inertia::render('admin/orders/show', [
+                'order' => $order,
+                'userRole' => $user->role,
+            ]);
         } else {
             $order = Order::where('user_id', $user->id)
                 ->with(['items.product', 'items.productSize', 'payments'])
                 ->findOrFail($id);
+            
+            // Render customer view
+            return Inertia::render('customer/order-details', [
+                'order' => $order,
+            ]);
         }
-
-        return Inertia::render('admin/orders/show', [
-            'order' => $order,
-            'userRole' => $user->role,
-        ]);
     }
 
     public function checkout(Request $request)
@@ -155,8 +162,7 @@ class OrderController extends Controller
     public function updateStatus(Request $request, $id)
     {
         $user = Auth::user();
-        
-        // Only admins can update order status
+
         if ($user->role !== 'admin') {
             return back()->withErrors(['error' => 'Unauthorized']);
         }
@@ -166,38 +172,59 @@ class OrderController extends Controller
         ]);
 
         $order = Order::findOrFail($id);
-        $order->update([
-            'status' => $request->status,
-        ]);
+        $newStatus = $request->status;
 
-        return back()->with('success', 'Order status updated successfully');
+        // Order status can only move forward from pending after payment is verified (paid)
+        $allowedWithoutPayment = ['pending', 'cancelled'];
+        if (! in_array($newStatus, $allowedWithoutPayment, true)) {
+            if ($order->payment_status !== 'paid') {
+                return back()->withErrors([
+                    'error' => 'Payment must be verified before order can be confirmed, processed, shipped, or delivered.',
+                ]);
+            }
+        }
+
+        // Optional: enforce forward-only transitions (no jumping back)
+        $orderStatusSequence = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'];
+        $currentIndex = array_search($order->status, $orderStatusSequence, true);
+        $newIndex = array_search($newStatus, $orderStatusSequence, true);
+        if ($currentIndex !== false && $newIndex !== false && $newIndex < $currentIndex && $newStatus !== 'cancelled') {
+            return back()->withErrors(['error' => 'Order status cannot be moved backward.']);
+        }
+
+        $order->update(['status' => $newStatus]);
+
+        return back()->with('success', 'Order status updated successfully.');
     }
 
     public function updatePaymentStatus(Request $request, $paymentId)
     {
         $user = Auth::user();
-        
-        // Only admins can update payment status
+
         if ($user->role !== 'admin') {
             return back()->withErrors(['error' => 'Unauthorized']);
         }
 
         $request->validate([
-            'status' => 'required|in:pending,paid,failed,refunded',
+            'status' => 'required|in:paid,failed',
         ]);
 
         $payment = \App\Models\Payment::findOrFail($paymentId);
-        $payment->update([
-            'status' => $request->status,
-        ]);
 
-        // If payment is approved, update order payment status
-        if ($request->status === 'paid') {
-            $payment->order->update([
-                'payment_status' => 'paid',
-            ]);
+        // Only allow verify/reject when payment is still pending (submitted, awaiting verification)
+        if ($payment->status !== 'pending') {
+            return back()->withErrors(['error' => 'This payment has already been verified or rejected.']);
         }
 
-        return back()->with('success', 'Payment status updated successfully');
+        $payment->update(['status' => $request->status]);
+
+        // Sync order-level payment_status: one source of truth after admin action
+        $payment->order->update([
+            'payment_status' => $request->status === 'paid' ? 'paid' : 'failed',
+        ]);
+
+        return back()->with('success', $request->status === 'paid'
+            ? 'Payment verified. You can now confirm the order.'
+            : 'Payment rejected.');
     }
 }

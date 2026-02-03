@@ -1,8 +1,8 @@
 import Footer from "@/Components/common/Footer";
 import Navbar from "@/Components/common/Navbar";
 import { router } from "@inertiajs/react";
-import { Trash2 } from "lucide-react";
-import { useState } from "react";
+import { Trash2, Plus, Minus } from "lucide-react";
+import { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
 
 interface CartItem {
@@ -35,42 +35,112 @@ export default function Cart({ items: initialItems, subtotal: initialSubtotal, t
     const [items, setItems] = useState(initialItems);
     const [subtotal, setSubtotal] = useState(initialSubtotal);
     const [total, setTotal] = useState(initialTotal);
+    const [updatingItems, setUpdatingItems] = useState<Set<number>>(new Set());
+    const debounceTimers = useRef<Map<number, NodeJS.Timeout>>(new Map());
 
-    const handleQuantityChange = (itemId: number, quantity: number) => {
-        if (quantity < 1) return;
+    // Optimistic update for immediate UI feedback
+    const updateLocalQuantity = (itemId: number, quantity: number) => {
+        setItems(prevItems => {
+            const updatedItems = prevItems.map(item => {
+                if (item.id === itemId) {
+                    const newTotalPrice = item.unit_price * quantity;
+                    return { ...item, quantity, total_price: newTotalPrice };
+                }
+                return item;
+            });
 
-        router.put(`/cart/${itemId}`, { quantity }, {
-            preserveScroll: true,
-            onSuccess: (page: any) => {
-                setItems(page.props.items as CartItem[]);
-                setSubtotal(page.props.subtotal as number);
-                setTotal(page.props.total as number);
-            },
+            // Recalculate totals locally
+            const newSubtotal = updatedItems.reduce((sum, item) => sum + item.total_price, 0);
+            setSubtotal(newSubtotal);
+            setTotal(newSubtotal);
+
+            return updatedItems;
         });
     };
+
+    // Debounced server update
+    const handleQuantityChange = useCallback((itemId: number, quantity: number) => {
+        if (quantity < 1) return;
+
+        // Update UI immediately
+        updateLocalQuantity(itemId, quantity);
+
+        // Clear existing timer for this item
+        const existingTimer = debounceTimers.current.get(itemId);
+        if (existingTimer) {
+            clearTimeout(existingTimer);
+        }
+
+        // Set new timer for server update
+        const timer = setTimeout(() => {
+            setUpdatingItems(prev => new Set(prev).add(itemId));
+            
+            router.put(`/cart/${itemId}`, { quantity }, {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: (page: any) => {
+                    setItems(page.props.items as CartItem[]);
+                    setSubtotal(page.props.subtotal as number);
+                    setTotal(page.props.total as number);
+                    setUpdatingItems(prev => {
+                        const newSet = new Set(prev);
+                        newSet.delete(itemId);
+                        return newSet;
+                    });
+                },
+                onError: () => {
+                    toast.error('Failed to update quantity');
+                    // Revert on error
+                    setItems(initialItems);
+                    setSubtotal(initialSubtotal);
+                    setTotal(initialTotal);
+                    setUpdatingItems(prev => {
+                        const newSet = new Set(prev);
+                        newSet.delete(itemId);
+                        return newSet;
+                    });
+                },
+            });
+        }, 800); // Wait 800ms after user stops typing
+
+        debounceTimers.current.set(itemId, timer);
+    }, [initialItems, initialSubtotal, initialTotal]);
 
     const handleRemove = (itemId: number) => {
         router.delete(`/cart/${itemId}`, {
             preserveScroll: true,
+            preserveState: true,
             onSuccess: (page: any) => {
                 setItems(page.props.items as CartItem[]);
                 setSubtotal(page.props.subtotal as number);
                 setTotal(page.props.total as number);
+                toast.success('Item removed from cart');
             },
         });
+    };
+
+    // Button-based quantity change (no debounce needed)
+    const handleQuantityButton = (itemId: number, delta: number) => {
+        const item = items.find(i => i.id === itemId);
+        if (!item) return;
+        
+        const newQuantity = item.quantity + delta;
+        if (newQuantity < 1) return;
+
+        handleQuantityChange(itemId, newQuantity);
     };
 
     if (items.length === 0) {
         return (
             <>
                 <Navbar />
-                <div className="min-h-screen bg-gray-50">
+                <div className="min-h-screen bg-gray-50 dark:bg-black">
                     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
                         <div className="text-center py-12">
-                            <h1 className="text-3xl font-bold text-emerald-700 sm:text-4xl mb-4">
+                            <h1 className="text-3xl font-bold text-emerald-700 dark:text-emerald-400 sm:text-4xl mb-4">
                                 Your Cart is Empty
                             </h1>
-                            <p className="text-gray-600 mb-6">Add some products to get started!</p>
+                            <p className="text-gray-600 dark:text-gray-300 mb-6">Add some products to get started!</p>
                             <button 
                                 onClick={() => router.visit('/products')}
                                 className="inline-block rounded-md bg-purple-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-purple-700"
@@ -88,7 +158,7 @@ export default function Cart({ items: initialItems, subtotal: initialSubtotal, t
     return (
         <>
             <Navbar />
-            <div className="min-h-screen bg-gray-50">
+            <div className="min-h-screen bg-gray-50 dark:bg-black">
                 <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
                     {/* Page Header */}
                     <div className="mb-8">
@@ -132,13 +202,38 @@ export default function Cart({ items: initialItems, subtotal: initialSubtotal, t
                                             <div className="flex items-center gap-4">
                                                 <div className="flex items-center gap-2">
                                                     <label className="text-sm font-medium text-gray-700 mr-2">Qty:</label>
-                                                    <input
-                                                        type="number"
-                                                        min="1"
-                                                        value={item.quantity}
-                                                        onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value))}
-                                                        className="w-20 rounded-md border border-gray-300 bg-white px-3 py-2 text-center text-sm text-gray-900 font-medium focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-opacity-20"
-                                                    />
+                                                    <div className="flex items-center gap-1 border border-gray-300 rounded-md bg-white">
+                                                        <button
+                                                            onClick={() => handleQuantityButton(item.id, -1)}
+                                                            disabled={item.quantity <= 1 || updatingItems.has(item.id)}
+                                                            className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-l-md"
+                                                            aria-label="Decrease quantity"
+                                                        >
+                                                            <Minus size={16} className="text-gray-600" />
+                                                        </button>
+                                                        <input
+                                                            type="number"
+                                                            min="1"
+                                                            value={item.quantity}
+                                                            onChange={(e) => {
+                                                                const val = parseInt(e.target.value) || 1;
+                                                                handleQuantityChange(item.id, val);
+                                                            }}
+                                                            disabled={updatingItems.has(item.id)}
+                                                            className="w-14 text-center text-sm text-gray-900 font-medium border-x border-gray-300 focus:outline-none focus:ring-0 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                                                        />
+                                                        <button
+                                                            onClick={() => handleQuantityButton(item.id, 1)}
+                                                            disabled={updatingItems.has(item.id)}
+                                                            className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-r-md"
+                                                            aria-label="Increase quantity"
+                                                        >
+                                                            <Plus size={16} className="text-gray-600" />
+                                                        </button>
+                                                    </div>
+                                                    {updatingItems.has(item.id) && (
+                                                        <span className="text-xs text-gray-500 animate-pulse">Updating...</span>
+                                                    )}
                                                 </div>
 
                                                 <div className="w-24 text-right">

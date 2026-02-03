@@ -92,7 +92,7 @@ export default function ProductDetails({ product, auth }: Props) {
     return (
         <>
             <Navbar />
-            <div className="bg-gray-50 min-h-screen">
+            <div className="bg-gray-50 dark:bg-black min-h-screen">
                 <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
                     {/* Back Button */}
                     <button

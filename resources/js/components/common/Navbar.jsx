@@ -3,6 +3,7 @@ import AppLogo from '@/components/app-logo';
 import { Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react'
 import CustomOrderModal from '@/components/common/CustomOrderModal'
+import AppearanceToggleDropdown from '@/components/appearance-dropdown'
 import { ShoppingCart, User } from 'lucide-react';
 
 
@@ -83,22 +84,34 @@ export default function Navbar() {
                         </button>
                     </nav>
 
-                    {/* Right Auth Buttons */}
+                    {/* Theme Toggle & Auth Buttons */}
                     <div className="flex items-center gap-3">
+                        {/* Dark/Light Mode Toggle */}
+                        <AppearanceToggleDropdown />
                         {auth.user ? (
                             <>
+                                {/* User Avatar with Name */}
                                 <Link
                                     href="/customer/profile"
-                                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 flex items-center gap-2"
+                                    className="flex items-center gap-3 px-3 py-2 bg-white  transition-all duration-300 "
                                 >
-                                    <User className="h-4 w-4" />
-                                    Profile
+                                    {/* Avatar Circle */}
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold shadow-md group-hover:shadow-lg transition-shadow">
+                                        {auth.user.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    {/* User Name */}
+                                    <div className="flex flex-col items-start">
+                                        <span className="text-sm font-semibold text-gray-900 group-hover:text-emerald-600 transition-colors">
+                                            {auth.user.name}
+                                        </span>
+                                    </div>
                                 </Link>
+
                                 {/* Dashboard button - only visible for admin */}
                                 {auth.user.role === 'admin' && (
                                     <Link
                                         href="/dashboard"
-                                        className="rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
+                                        className="rounded-full bg-purple-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-purple-700 transition-all duration-300 hover:shadow-lg"
                                     >
                                         Dashboard
                                     </Link>
@@ -108,13 +121,13 @@ export default function Navbar() {
                             <>
                                 <Link
                                     href="/login"
-                                    className="text-sm font-medium text-black hover:text-emerald-600"
+                                    className="text-sm font-medium text-black hover:text-emerald-600 transition-colors duration-300"
                                 >
                                     Log in
                                 </Link>
                                 <Link
                                     href="/register"
-                                    className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+                                    className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 transition-all duration-300 hover:shadow-lg"
                                 >
                                     Register
                                 </Link>

@@ -90,7 +90,7 @@ export default function Products({ products: initialProducts, categories, filter
     return (
         <>
             <Navbar />
-            <div className="bg-gray-50 min-h-screen">
+            <div className="bg-gray-50 dark:bg-black min-h-screen">
                 <div className="mx-auto max-w-7xl px-6 py-12 text-gray-800">
                     <h1 className="mb-8 text-3xl font-bold text-emerald-700">Products</h1>
 
