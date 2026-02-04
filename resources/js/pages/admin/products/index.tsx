@@ -45,10 +45,17 @@ interface Product {
     sizes: ProductSize[];
 }
 
+interface PaginatedProducts {
+    data: Product[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    links: { url: string | null; label: string; active: boolean }[];
+}
+
 interface PageProps {
-    products: {
-        data: Product[];
-    };
+    products: PaginatedProducts;
     flash?: {
         message?: string;
         error?: string;
@@ -58,6 +65,8 @@ interface PageProps {
 
 export default function Index() {
     const { products, flash } = usePage<PageProps>().props;
+    const list = products.data || [];
+    const from = (products.current_page - 1) * products.per_page;
     // Drawer state
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [categoryForm, setCategoryForm] = useState({
@@ -197,6 +206,7 @@ export default function Index() {
                 <Table>
                     <TableHeader>
                         <TableRow className="bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-50 dark:hover:bg-gray-900/50">
+                            <TableHead className="font-semibold w-14">No.</TableHead>
                             <TableHead className="font-semibold">Product</TableHead>
                             <TableHead className="font-semibold">Category</TableHead>
                             <TableHead className="font-semibold">Price</TableHead>
@@ -208,9 +218,9 @@ export default function Index() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {products.data.length === 0 ? (
+                        {list.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={7} className="h-32 text-center">
+                                <TableCell colSpan={8} className="h-32 text-center">
                                     <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
                                         <Package className="w-12 h-12 mb-2 opacity-50" />
                                         <p className="text-sm font-medium">No products found</p>
@@ -219,8 +229,11 @@ export default function Index() {
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            products.data.map((product) => (
+                            list.map((product, index) => (
                                 <TableRow key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                    <TableCell className="text-gray-500 dark:text-gray-400">
+                                        {from + index + 1}
+                                    </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-3">
                                             <div className="flex-shrink-0 w-10 h-10 rounded-md bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
@@ -351,6 +364,41 @@ export default function Index() {
                     </TableBody>
                 </Table>
             </div>
+
+            {/* Pagination */}
+            {products.last_page > 1 && (
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-3">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Showing {from + 1} to {Math.min(from + list.length, products.total)} of {products.total} products
+                    </p>
+                    <div className="flex items-center gap-1">
+                        {products.links.map((link, i) => (
+                            <span key={i}>
+                                {link.url ? (
+                                    <a
+                                        href={link.url}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            router.get(link.url!);
+                                        }}
+                                        className={`inline-flex items-center justify-center min-w-[2.25rem] px-2 py-1.5 text-sm rounded-md ${
+                                            link.active
+                                                ? 'bg-emerald-600 text-white font-medium'
+                                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600'
+                                        }`}
+                                    >
+                                        {link.label.replace('&laquo; Previous', 'Prev').replace('Next &raquo;', 'Next')}
+                                    </a>
+                                ) : (
+                                    <span className="inline-flex items-center justify-center min-w-[2.25rem] px-2 py-1.5 text-sm text-gray-400 dark:text-gray-500">
+                                        {link.label.replace('&laquo; Previous', 'Prev').replace('Next &raquo;', 'Next')}
+                                    </span>
+                                )}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            )}
         </AppLayout>
     );
 }

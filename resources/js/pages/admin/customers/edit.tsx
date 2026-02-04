@@ -10,7 +10,7 @@ interface Customer {
     email: string;
     phone?: string;
     address?: string;
-    email_verified: boolean;
+    is_active: boolean;
     created_at: string;
 }
 
@@ -276,11 +276,11 @@ export default function CustomerEdit({ customer, orders, stats }: Props) {
                                 <div>
                                     <p className="text-xs text-gray-500">Status</p>
                                     <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
-                                        customer.email_verified 
+                                        customer.is_active 
                                             ? 'bg-green-100 text-green-800' 
-                                            : 'bg-gray-100 text-gray-800'
+                                            : 'bg-amber-100 text-amber-800'
                                     }`}>
-                                        {customer.email_verified ? 'Active' : 'Unverified'}
+                                        {customer.is_active ? 'Active' : 'Inactive'}
                                     </span>
                                 </div>
                                 <div>

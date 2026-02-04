@@ -17,17 +17,23 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
 
         User::firstOrCreate(
-            ['email' => 'test@example.com'],
+            ['email' => 'test@gmail.com'],
             [
                 'name' => 'Test User',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('12345678'),
                 'email_verified_at' => now(),
             ]
         );
 
-        // Seed payment methods
-        $this->call([
-            PaymentMethodSeeder::class,
-        ]);
+        // Create admin user
+        User::firstOrCreate(
+            ['email' => 'admin@gmail.com'],
+            [
+                'name' => 'Admin',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+                'role' => 'admin',
+            ]
+        );
     }
 }

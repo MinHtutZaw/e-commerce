@@ -10,17 +10,10 @@ class CustomOrder extends Model
     use HasFactory;
 
     protected $fillable = [
-        'order_id',
-        'customer_name',
-        'customer_email',
-        'customer_phone',
-        'delivery_address',
+        'user_id',
         'customer_type',
         'gender',
         'uniform_type',
-        'size_small_quantity',
-        'size_medium_quantity',
-        'size_large_quantity',
         'notes',
         'status',
         'quoted_price',
@@ -30,8 +23,31 @@ class CustomOrder extends Model
         'quoted_price' => 'decimal:2',
     ];
 
-    public function order()
+    // Automatically append total_quantity to JSON
+    protected $appends = ['total_quantity'];
+
+    /**
+     * Get the user who placed this custom order.
+     */
+    public function user()
     {
-        return $this->belongsTo(Order::class);
+        return $this->belongsTo(User::class);
+    }
+
+
+    /**
+     * Get all sizes for this custom order.
+     */
+    public function sizes()
+    {
+        return $this->hasMany(CustomOrderSize::class);
+    }
+
+    /**
+     * Get total quantity (sum of all sizes).
+     */
+    public function getTotalQuantityAttribute(): int
+    {
+        return $this->sizes()->sum('quantity');
     }
 }

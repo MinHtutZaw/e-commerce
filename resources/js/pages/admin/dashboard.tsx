@@ -99,17 +99,7 @@ export default function Dashboard({ userRole, stats }: Props) {
                         </div>
                     </div>
 
-                    <div className="rounded-xl border bg-white p-6 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">Pending Payments</p>
-                                <p className="mt-2 text-3xl font-bold text-gray-900">{stats.pendingPayments || 0}</p>
-                            </div>
-                            <div className="rounded-full bg-orange-100 p-3">
-                                <CreditCard className="h-6 w-6 text-orange-600" />
-                            </div>
-                        </div>
-                    </div>
+                   
 
                     <div className="rounded-xl border bg-white p-6 shadow-sm">
                         <div className="flex items-center justify-between">

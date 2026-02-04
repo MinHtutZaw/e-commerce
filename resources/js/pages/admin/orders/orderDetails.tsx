@@ -68,11 +68,11 @@ interface Props {
 
 type PaymentModalPayload = { paymentId: number; status: 'paid' | 'failed'; label: string } | null;
 
-export default function OrderShow({ order, userRole }: Props) {
+export default function OrderDetails({ order, userRole }: Props) {
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState(order.status);
     const [paymentModal, setPaymentModal] = useState<PaymentModalPayload>(null);
-    
+
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
         { title: 'Orders', href: '/customer/orders' },
@@ -84,7 +84,7 @@ export default function OrderShow({ order, userRole }: Props) {
             setIsUpdatingStatus(false);
             return;
         }
-        
+
         router.put(`/orders/${order.id}/status`, {
             status: selectedStatus,
         }, {
@@ -114,36 +114,24 @@ export default function OrderShow({ order, userRole }: Props) {
     };
 
     const statusConfig = {
-        pending: { 
-            color: 'bg-yellow-100 text-yellow-800 border-yellow-200', 
+        pending: {
+            color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
             icon: Clock,
             label: 'Pending'
         },
-        confirmed: { 
-            color: 'bg-blue-100 text-blue-800 border-blue-200', 
-            icon: CheckCircle,
-            label: 'Confirmed'
-        },
-        processing: { 
-            color: 'bg-purple-100 text-purple-800 border-purple-200', 
+
+        processing: {
+            color: 'bg-purple-100 text-purple-800 border-purple-200',
             icon: Package,
             label: 'Processing'
         },
-        shipped: { 
-            color: 'bg-indigo-100 text-indigo-800 border-indigo-200', 
-            icon: Truck,
-            label: 'Shipped'
-        },
-        delivered: { 
-            color: 'bg-green-100 text-green-800 border-green-200', 
+
+        delivered: {
+            color: 'bg-green-100 text-green-800 border-green-200',
             icon: CheckCircle,
             label: 'Delivered'
         },
-        cancelled: { 
-            color: 'bg-red-100 text-red-800 border-red-200', 
-            icon: XCircle,
-            label: 'Cancelled'
-        },
+
     };
 
     const paymentStatusConfig = {
@@ -152,18 +140,18 @@ export default function OrderShow({ order, userRole }: Props) {
             icon: Clock,
             label: 'Unpaid'
         },
-        pending: { 
-            color: 'bg-yellow-100 text-yellow-800 border-yellow-200', 
+        pending: {
+            color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
             icon: Clock,
             label: 'Submitted'
         },
-        paid: { 
-            color: 'bg-green-100 text-green-800 border-green-200', 
+        paid: {
+            color: 'bg-green-100 text-green-800 border-green-200',
             icon: CheckCircle,
             label: 'Verified'
         },
-        failed: { 
-            color: 'bg-red-100 text-red-800 border-red-200', 
+        failed: {
+            color: 'bg-red-100 text-red-800 border-red-200',
             icon: XCircle,
             label: 'Rejected'
         },
@@ -180,11 +168,11 @@ export default function OrderShow({ order, userRole }: Props) {
     const currentStatus = statusConfig[order.status as keyof typeof statusConfig] || statusConfig.pending;
     const StatusIcon = currentStatus.icon;
 
-    const latestPayment = order.payments && order.payments.length > 0 
-        ? order.payments[order.payments.length - 1] 
+    const latestPayment = order.payments && order.payments.length > 0
+        ? order.payments[order.payments.length - 1]
         : null;
 
-    const currentPaymentStatus = latestPayment 
+    const currentPaymentStatus = latestPayment
         ? paymentStatusConfig[latestPayment.status as keyof typeof paymentStatusConfig] || paymentStatusConfig.pending
         : (order.payment_status ? paymentStatusConfig[order.payment_status as keyof typeof paymentStatusConfig] : paymentStatusConfig.unpaid);
     const PaymentIcon = currentPaymentStatus?.icon;
@@ -197,7 +185,7 @@ export default function OrderShow({ order, userRole }: Props) {
     const adminOrderNextAction = userRole === 'admin' && order.status !== 'cancelled'
         ? (order.status === 'pending' && paymentVerified ? 'processing'
             : order.status === 'processing' ? 'delivered'
-            : null)
+                : null)
         : null;
 
     const handleOrderAction = (nextStatus: string) => {
@@ -207,7 +195,7 @@ export default function OrderShow({ order, userRole }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Order ${order.order_number}`} />
-            
+
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -223,11 +211,11 @@ export default function OrderShow({ order, userRole }: Props) {
                             <p className="text-gray-600">Order #{order.order_number}</p>
                         </div>
                     </div>
-                    
+
                     {/* Status Badge */}
                     <div className="flex items-center gap-2 rounded-lg border bg-white px-4 py-2 shadow-sm">
                         <StatusIcon className="h-5 w-5" />
-                        <span className={`rounded-full border px-3 py-1 text-sm font-medium ${currentStatus.color}`}>
+                        <span className={`rounded-full border px-4 py-1 text-sm font-medium ${currentStatus.color}`}>
                             {currentStatus.label}
                         </span>
                     </div>
@@ -278,7 +266,7 @@ export default function OrderShow({ order, userRole }: Props) {
                                     </div>
                                 ))}
                             </div>
-                            
+
                             {/* Order Total */}
                             <div className="mt-6 border-t pt-4">
                                 <div className="flex items-center justify-between">
@@ -301,7 +289,7 @@ export default function OrderShow({ order, userRole }: Props) {
                                     {order.payments.map((payment) => {
                                         const paymentConfig = paymentStatusConfig[payment.status as keyof typeof paymentStatusConfig] || paymentStatusConfig.pending;
                                         const PaymentStatusIcon = paymentConfig.icon;
-                                        
+
                                         return (
                                             <div key={payment.id} className="rounded-lg border bg-gray-50 p-4">
                                                 <div className="flex items-center justify-between mb-3">
@@ -336,7 +324,7 @@ export default function OrderShow({ order, userRole }: Props) {
                                                         </span>
                                                     </div>
                                                 </div>
-                                                
+
                                                 {/* Admin Payment Actions */}
                                                 {userRole === 'admin' && payment.status === 'pending' && (
                                                     <div className="flex gap-2 border-t pt-3">

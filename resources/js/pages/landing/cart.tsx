@@ -74,7 +74,7 @@ export default function Cart({ items: initialItems, subtotal: initialSubtotal, t
         // Set new timer for server update
         const timer = setTimeout(() => {
             setUpdatingItems(prev => new Set(prev).add(itemId));
-            
+
             router.put(`/cart/${itemId}`, { quantity }, {
                 preserveScroll: true,
                 preserveState: true,
@@ -123,7 +123,7 @@ export default function Cart({ items: initialItems, subtotal: initialSubtotal, t
     const handleQuantityButton = (itemId: number, delta: number) => {
         const item = items.find(i => i.id === itemId);
         if (!item) return;
-        
+
         const newQuantity = item.quantity + delta;
         if (newQuantity < 1) return;
 
@@ -141,7 +141,7 @@ export default function Cart({ items: initialItems, subtotal: initialSubtotal, t
                                 Your Cart is Empty
                             </h1>
                             <p className="text-gray-600 dark:text-gray-300 mb-6">Add some products to get started!</p>
-                            <button 
+                            <button
                                 onClick={() => router.visit('/products')}
                                 className="inline-block rounded-md bg-purple-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-purple-700"
                             >
@@ -232,17 +232,18 @@ export default function Cart({ items: initialItems, subtotal: initialSubtotal, t
                                                         </button>
                                                     </div>
                                                     {updatingItems.has(item.id) && (
-                                                        <span className="text-xs text-gray-500 animate-pulse">Updating...</span>
+                                                        <span className="text-xs text-gray-500 animate-pulse"></span>
                                                     )}
                                                 </div>
 
                                                 <div className="w-24 text-right">
                                                     <p className="text-base font-semibold text-gray-900">
-                                                        {item.total_price.toLocaleString()} MMK
+                                                        <span>{item.total_price.toLocaleString()}</span>{' '}
+                                                        <span className="text-sm font-normal">MMK</span>
                                                     </p>
                                                 </div>
 
-                                                <button 
+                                                <button
                                                     onClick={() => handleRemove(item.id)}
                                                     className="flex-shrink-0 rounded-lg p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
                                                     aria-label="Remove item"
@@ -277,24 +278,26 @@ export default function Cart({ items: initialItems, subtotal: initialSubtotal, t
                                     </div>
                                 </div>
 
-                                <button 
-                                   onClick={() => {
-                                       // Create order from cart, backend will redirect to checkout
-                                       router.post('/orders', {
-                                           notes: '',
-                                       }, {
-                                           onError: (errors) => {
-                                               console.error('Order creation error:', errors);
-                                               toast.error('Failed to create order', {
-                                                   description: 'Please try again or contact support',
-                                               });
-                                           },
-                                       });
-                                   }}
-                                   className="mt-6 w-full rounded-md bg-purple-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-                               >
-                                   Proceed to Payment
-                               </button>
+                                <button
+                                    onClick={() => {
+                                        // Create order from cart, backend will redirect to checkout
+                                        router.post('/orders', {
+                                            notes: '',
+                                        }, {
+                                            onError: (errors) => {
+                                                console.error('Order creation error:', errors);
+                                            
+                                                // If Laravel validation errors exist
+                                                const message = errors?.message || JSON.stringify(errors);
+                                                toast.error('Failed to create order', { description: message });
+                                            },
+                                            
+                                        });
+                                    }}
+                                    className="mt-6 w-full rounded-md bg-purple-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                                >
+                                    Proceed to Payment
+                                </button>
 
                                 <button onClick={() => router.visit('/products')} className="mt-3 w-full rounded-md border border-gray-300 bg-white py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
                                     Continue Shopping

@@ -36,6 +36,7 @@ Route::middleware(['auth'])->group(function () {
     
     // Custom Orders (auth required)
     Route::post('/custom-orders', [CustomOrderController::class, 'store'])->name('custom-orders.store');
+    Route::get('/my-custom-orders', [CustomOrderController::class, 'customerIndex'])->name('customer.custom-orders');
     
     // Customer Profile routes
     Route::get('/customer/profile', [\App\Http\Controllers\CustomerProfileController::class, 'index'])->name('customer.profile');
@@ -109,7 +110,9 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(functio
     
     // Custom Orders
     Route::get('/custom-orders', [CustomOrderController::class, 'index'])->name('admin.custom-orders.index');
+    Route::get('/custom-orders/{id}', [CustomOrderController::class, 'show'])->name('admin.custom-orders.show');
     Route::put('/custom-orders/{id}/status', [CustomOrderController::class, 'updateStatus'])->name('admin.custom-orders.update-status');
+    Route::put('/custom-orders/{id}/quote', [CustomOrderController::class, 'updateQuote'])->name('admin.custom-orders.update-quote');
 });
 
 require __DIR__.'/settings.php';

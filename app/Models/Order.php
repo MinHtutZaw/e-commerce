@@ -22,17 +22,6 @@ class Order extends Model
         'total_amount' => 'integer',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($order) {
-            if (empty($order->order_number)) {
-                $order->order_number = 'ORD-' . date('Y') . '-' . str_pad(static::count() + 1, 6, '0', STR_PAD_LEFT);
-            }
-        });
-    }
-
     public function user()
     {
         return $this->belongsTo(User::class);

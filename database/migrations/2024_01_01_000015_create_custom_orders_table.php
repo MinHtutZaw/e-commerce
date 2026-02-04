@@ -13,25 +13,17 @@ return new class extends Migration
     {
         Schema::create('custom_orders', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('order_id')->nullable()->constrained('orders')->onDelete('set null');
-            $table->string('customer_name');
-            $table->string('customer_email');
-            $table->string('customer_phone');
-            $table->text('delivery_address');
+            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null');
             $table->enum('customer_type', ['child', 'adult']);
             $table->enum('gender', ['male', 'female', 'unisex'])->default('unisex');
-            $table->enum('uniform_type', [
-                'school',
-                'college', 
-                'university',
-            ])->default('school');
-           
+            $table->string('uniform_type')->nullable(); // Changed to string for flexibility
             $table->text('notes')->nullable();
-            $table->enum('status', ['pending', 'confirmed', 'processing'])->default('pending');
+            $table->enum('status', ['pending', 'quoted', 'confirmed', 'processing', 'completed', 'cancelled'])->default('pending');
+            $table->decimal('quoted_price', 10, 2)->nullable();
             $table->timestamps();
             
             $table->index('status');
-            $table->index(['gender', 'uniform_type']);
+            $table->index('user_id');
         });
     }
 

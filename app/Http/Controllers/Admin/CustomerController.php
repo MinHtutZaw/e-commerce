@@ -30,13 +30,20 @@ class CustomerController extends Controller
             });
         }
 
-        // Sort
-        $sortBy = $request->get('sort_by', 'created_at');
-        $sortOrder = $request->get('sort_order', 'desc');
-        
-        $customers = $query->orderBy($sortBy, $sortOrder)->get()->map(function($customer) {
+        // Sort and paginate (10 per page); allow id, name, created_at, orders_count
+        $allowedSort = ['id', 'name', 'created_at', 'orders_count'];
+        $sortBy = $request->get('sort_by', 'id');
+        if (!in_array($sortBy, $allowedSort, true)) {
+            $sortBy = 'id';
+        }
+        $sortOrder = strtolower($request->get('sort_order', 'desc'));
+        if (!in_array($sortOrder, ['asc', 'desc'], true)) {
+            $sortOrder = ($sortBy === 'name') ? 'asc' : 'desc';
+        }
+
+        $customers = $query->orderBy($sortBy, $sortOrder)->paginate(10)->withQueryString()->through(function ($customer) {
             $totalSpent = $customer->orders->where('payment_status', 'paid')->sum('total_amount');
-            
+
             return [
                 'id' => $customer->id,
                 'name' => $customer->name,
@@ -46,7 +53,7 @@ class CustomerController extends Controller
                 'orders_count' => $customer->orders_count,
                 'total_spent' => $totalSpent,
                 'created_at' => $customer->created_at->format('M d, Y'),
-                'status' => $customer->email_verified_at ? 'Active' : 'Unverified',
+                'status' => $customer->email_verified_at ? 'Active' : 'Inactive',
             ];
         });
 
@@ -84,7 +91,7 @@ class CustomerController extends Controller
                 'email' => $customer->email,
                 'phone' => $customer->phone,
                 'address' => $customer->address,
-                'email_verified' => $customer->email_verified_at ? true : false,
+                'is_active' => (bool) $customer->email_verified_at,
                 'created_at' => $customer->created_at->format('F d, Y'),
             ],
             'orders' => $customer->orders->map(function($order) {
@@ -151,10 +158,10 @@ class CustomerController extends Controller
 
         if ($customer->email_verified_at) {
             $customer->update(['email_verified_at' => null]);
-            $message = 'Customer deactivated successfully';
+            $message = 'Customer set to inactive';
         } else {
             $customer->update(['email_verified_at' => now()]);
-            $message = 'Customer activated successfully';
+            $message = 'Customer set to active';
         }
 
         return back()->with('success', $message);

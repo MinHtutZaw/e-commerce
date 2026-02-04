@@ -1,8 +1,19 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { Users, Search, Edit, Trash2, UserCheck, UserX, DollarSign, ShoppingBag } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -27,18 +38,64 @@ interface Filters {
     sort_order: string;
 }
 
+interface PaginationLink {
+    url: string | null;
+    label: string;
+    active: boolean;
+}
+
+interface PaginatedCustomers {
+    data: Customer[];
+    links: PaginationLink[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+}
+
+type StatusModal = {
+    open: boolean;
+    customerId: number | null;
+    customerName: string;
+    currentStatus: string;
+};
+
 interface Props {
-    customers: Customer[];
+    customers: PaginatedCustomers;
     filters: Filters;
 }
 
 export default function CustomersIndex({ customers, filters }: Props) {
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
     const [sortBy, setSortBy] = useState(filters.sort_by);
+    const [sortOrder, setSortOrder] = useState(filters.sort_order || 'desc');
+    const [statusModal, setStatusModal] = useState<StatusModal>({
+        open: false,
+        customerId: null,
+        customerName: '',
+        currentStatus: '',
+    });
+
+    const { flash } = usePage().props as { flash?: { success?: string; error?: string } };
+
+    useEffect(() => {
+        if (flash?.success) toast.success(flash.success);
+        if (flash?.error) toast.error(flash.error);
+    }, [flash?.success, flash?.error]);
 
     const handleSearch = () => {
-        router.get('/admin/customers', { search: searchTerm, sort_by: sortBy }, { preserveState: true });
+        router.get(
+            '/admin/customers',
+            {
+                search: searchTerm,
+                sort_by: sortBy,
+                sort_order: sortOrder,
+                page: 1,
+            },
+            { preserveState: true }
+        );
     };
+    
 
     const handleDelete = (id: number, name: string) => {
         if (confirm(`Are you sure you want to delete customer "${name}"? This action cannot be undone.`)) {
@@ -48,26 +105,39 @@ export default function CustomersIndex({ customers, filters }: Props) {
         }
     };
 
-    const handleToggleStatus = (id: number, currentStatus: string) => {
-        const action = currentStatus === 'Active' ? 'deactivate' : 'activate';
-        if (confirm(`Are you sure you want to ${action} this customer?`)) {
-            router.post(`/admin/customers/${id}/toggle-status`, {}, {
-                preserveScroll: true,
-            });
-        }
+    const openStatusModal = (id: number, name: string, currentStatus: string) => {
+        setStatusModal({ open: true, customerId: id, customerName: name, currentStatus });
     };
 
-    const stats = {
-        total: customers.length,
-        totalRevenue: customers.reduce((sum, c) => sum + c.total_spent, 0),
-        totalOrders: customers.reduce((sum, c) => sum + c.orders_count, 0),
-        activeCustomers: customers.filter(c => c.status === 'Active').length,
+    const handleConfirmToggleStatus = () => {
+        if (statusModal.customerId === null) return;
+        const newStatus = statusModal.currentStatus === 'Active' ? 'Inactive' : 'Active';
+        router.post(`/admin/customers/${statusModal.customerId}/toggle-status`, {}, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success(`Customer set to ${newStatus}`);
+                setStatusModal(prev => ({ ...prev, open: false, customerId: null }));
+            },
+            onError: () => {
+                toast.error('Failed to update status');
+                setStatusModal(prev => ({ ...prev, open: false }));
+            },
+        });
     };
+
+    const data = customers.data || [];
+    const stats = {
+        total: customers.total ?? data.length,
+        totalRevenue: data.reduce((sum, c) => sum + c.total_spent, 0),
+        totalOrders: data.reduce((sum, c) => sum + c.orders_count, 0),
+        activeCustomers: data.filter(c => c.status === 'Active').length,
+    };
+    const from = (customers.current_page - 1) * customers.per_page;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Customers" />
-            
+
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -94,7 +164,7 @@ export default function CustomersIndex({ customers, filters }: Props) {
                     <div className="rounded-lg border bg-white p-4 shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-gray-600">Active Customers</p>
+                                <p className="text-sm text-gray-600">Active</p>
                                 <p className="text-2xl font-bold text-green-600">{stats.activeCustomers}</p>
                             </div>
                             <div className="rounded-full bg-green-100 p-3">
@@ -115,17 +185,7 @@ export default function CustomersIndex({ customers, filters }: Props) {
                         </div>
                     </div>
 
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-gray-600">Total Revenue</p>
-                                <p className="text-2xl font-bold text-emerald-600">{stats.totalRevenue.toLocaleString()} MMK</p>
-                            </div>
-                            <div className="rounded-full bg-emerald-100 p-3">
-                                <DollarSign className="h-6 w-6 text-emerald-600" />
-                            </div>
-                        </div>
-                    </div>
+
                 </div>
 
                 {/* Search and Filter */}
@@ -148,121 +208,204 @@ export default function CustomersIndex({ customers, filters }: Props) {
                         </button>
                     </div>
                     <select
-                        value={sortBy}
+                        value={`${sortBy}:${sortOrder}`}
                         onChange={(e) => {
-                            setSortBy(e.target.value);
-                            router.get('/admin/customers', { search: searchTerm, sort_by: e.target.value }, { preserveState: true });
+                            const [by, order] = e.target.value.split(':');
+                            setSortBy(by);
+                            setSortOrder(order);
+
+                            router.get(
+                                '/admin/customers',
+                                {
+                                    search: searchTerm,
+                                    sort_by: by,
+                                    sort_order: order,
+                                    page: 1,
+                                },
+                                { preserveState: true }
+                            );
                         }}
                         className="rounded-md border border-gray-300 px-4 py-2 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     >
-                        <option value="created_at">Newest First</option>
-                        <option value="name">Name A-Z</option>
-                        <option value="orders_count">Most Orders</option>
+                        <option value="id:desc">Newest First</option>
+                        <option value="id:asc">Oldest First</option>
+                        <option value="name:asc">Name A–Z</option>
+                        <option value="orders_count:desc">Orders: High to Low</option>
+                        <option value="orders_count:asc">Orders: Low to High</option>
                     </select>
+
                 </div>
 
                 {/* Customers Table */}
-                <div className="rounded-lg border bg-white shadow-sm overflow-hidden">
-                    <table className="w-full">
-                        <thead className="bg-gray-50 border-b">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Orders</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Spent</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                            {customers.map((customer) => (
-                                <tr key={customer.id} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center">
-                                            <div className="h-10 w-10 flex-shrink-0">
-                                                <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                                                    <span className="text-emerald-600 font-semibold text-sm">
+                <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-50 dark:hover:bg-gray-900/50">
+                                <TableHead className="font-semibold w-14">No.</TableHead>
+                                <TableHead className="font-semibold">Customer</TableHead>
+                                <TableHead className="font-semibold">Contact</TableHead>
+                                <TableHead className="font-semibold">Orders</TableHead>
+                                <TableHead className="font-semibold">Total Spent</TableHead>
+                                <TableHead className="font-semibold">Status</TableHead>
+                                <TableHead className="font-semibold">Joined</TableHead>
+                                <TableHead className="font-semibold text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {data.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={8} className="h-32 text-center">
+                                        <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+                                            <Users className="w-12 h-12 mb-2 opacity-50" />
+                                            <p className="text-sm font-medium">No customers found</p>
+                                            <p className="text-xs mt-1">
+                                                {searchTerm ? 'Try adjusting your search' : 'No customers registered yet'}
+                                            </p>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                data.map((customer) => (
+                                    <TableRow key={customer.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                        <TableCell className="text-gray-500 dark:text-gray-400">
+                                            {customer.id}
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                                                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold text-sm">
                                                         {customer.name.charAt(0).toUpperCase()}
                                                     </span>
                                                 </div>
+                                                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{customer.name}</div>
                                             </div>
-                                            <div className="ml-4">
-                                                <div className="text-sm font-medium text-gray-900">{customer.name}</div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="text-sm text-gray-900 dark:text-gray-100">{customer.email}</div>
+                                            {customer.phone && (
+                                                <div className="text-xs text-gray-500 dark:text-gray-400">{customer.phone}</div>
+                                            )}
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-1">
+                                                <ShoppingBag className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                                                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{customer.orders_count}</span>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm text-gray-900">{customer.email}</div>
-                                        {customer.phone && (
-                                            <div className="text-sm text-gray-500">{customer.phone}</div>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center gap-1">
-                                            <ShoppingBag className="h-4 w-4 text-gray-400" />
-                                            <span className="text-sm font-medium text-gray-900">{customer.orders_count}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm font-semibold text-emerald-600">
-                                            {customer.total_spent.toLocaleString()} MMK
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
-                                            customer.status === 'Active' 
-                                                ? 'bg-green-100 text-green-800' 
-                                                : 'bg-gray-100 text-gray-800'
-                                        }`}>
-                                            {customer.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {customer.created_at}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <button
-                                                onClick={() => router.visit(`/admin/customers/${customer.id}/edit`)}
-                                                className="text-emerald-600 hover:text-emerald-900"
-                                                title="Edit Customer"
-                                            >
-                                                <Edit className="h-4 w-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleToggleStatus(customer.id, customer.status)}
-                                                className={customer.status === 'Active' ? 'text-orange-600 hover:text-orange-900' : 'text-green-600 hover:text-green-900'}
-                                                title={customer.status === 'Active' ? 'Deactivate' : 'Activate'}
-                                            >
-                                                {customer.status === 'Active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(customer.id, customer.name)}
-                                                className="text-red-600 hover:text-red-900"
-                                                title="Delete Customer"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-
-                    {/* Empty State */}
-                    {customers.length === 0 && (
-                        <div className="flex flex-col items-center justify-center py-12">
-                            <Users className="h-16 w-16 text-gray-400" />
-                            <h3 className="mt-4 text-lg font-semibold text-gray-900">No customers found</h3>
-                            <p className="mt-2 text-gray-600">
-                                {searchTerm ? 'Try adjusting your search' : 'No customers registered yet'}
-                            </p>
-                        </div>
-                    )}
+                                        </TableCell>
+                                        <TableCell>
+                                            <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                                                {customer.total_spent.toLocaleString()} MMK
+                                            </span>
+                                        </TableCell>
+                                        <TableCell>
+                                            <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${customer.status === 'Active'
+                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                                    : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+                                                }`}>
+                                                {customer.status}
+                                            </span>
+                                        </TableCell>
+                                        <TableCell className="text-sm text-gray-500 dark:text-gray-400">
+                                            {customer.created_at}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => router.visit(`/admin/customers/${customer.id}/edit`)}
+                                                    className="hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400"
+                                                >
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => openStatusModal(customer.id, customer.name, customer.status)}
+                                                    className={customer.status === 'Active' ? 'hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-600 dark:hover:text-amber-400' : 'hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 dark:hover:text-green-400'}
+                                                    title={customer.status === 'Active' ? 'Set Inactive' : 'Set Active'}
+                                                >
+                                                    {customer.status === 'Active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => handleDelete(customer.id, customer.name)}
+                                                    className="hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400"
+                                                    title="Delete Customer"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
                 </div>
+
+                {/* Pagination */}
+                {customers.last_page > 1 && (
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-3">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Showing {from + 1} to {Math.min(from + data.length, customers.total)} of {customers.total} customers
+                        </p>
+                        <div className="flex items-center gap-1">
+                            {customers.links.map((link, i) => (
+                                <span key={i}>
+                                    {link.url ? (
+                                        <a
+                                            href={link.url}
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                router.get(link.url!);
+                                            }}
+                                            className={`inline-flex items-center justify-center min-w-[2.25rem] px-2 py-1.5 text-sm rounded-md ${link.active
+                                                    ? 'bg-emerald-600 text-white font-medium'
+                                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600'
+                                                }`}
+                                        >
+                                            {link.label.replace('&laquo; Previous', 'Prev').replace('Next &raquo;', 'Next')}
+                                        </a>
+                                    ) : (
+                                        <span className="inline-flex items-center justify-center min-w-[2.25rem] px-2 py-1.5 text-sm text-gray-400 dark:text-gray-500">
+                                            {link.label.replace('&laquo; Previous', 'Prev').replace('Next &raquo;', 'Next')}
+                                        </span>
+                                    )}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
+
+            {/* Set Active / Inactive confirmation modal */}
+            <Dialog open={statusModal.open} onOpenChange={(open) => !open && setStatusModal(prev => ({ ...prev, open: false }))}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {statusModal.currentStatus === 'Active' ? 'Set to Inactive' : 'Set to Active'}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {statusModal.currentStatus === 'Active'
+                                ? `Set "${statusModal.customerName}" to Inactive? They will be marked as inactive.`
+                                : `Set "${statusModal.customerName}" to Active? They will be marked as active.`}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button variant="outline" onClick={() => setStatusModal(prev => ({ ...prev, open: false }))}>
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleConfirmToggleStatus}
+                            className={statusModal.currentStatus === 'Active' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-green-600 hover:bg-green-700'}
+                        >
+                            {statusModal.currentStatus === 'Active' ? 'Set Inactive' : 'Set Active'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

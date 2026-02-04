@@ -93,7 +93,11 @@ export default function Checkout({ order, flash }: Props) {
                 toast.success('Payment submitted successfully!', {
                     description: 'Admin will verify your payment shortly',
                 });
-                router.visit('/orders');
+                if (order) {
+                    router.visit(`/orders/${order.id}`);
+                } else {
+                    router.visit('/customer/orders');
+                }
             },
             onError: (errors) => {
                 console.error('Payment submission error:', errors);

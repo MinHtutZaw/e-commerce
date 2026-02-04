@@ -42,8 +42,8 @@ export default function Navbar() {
                                 key={item.href}
                                 href={item.href}
                                 className={`px-4 py-2 rounded-full transition-colors duration-200 ${isActive(item.href)
-                                        ? "text-emerald-600 bg-white"
-                                        : "text-black hover:text-emerald-600"
+                                    ? "text-emerald-600 bg-white"
+                                    : "text-black hover:text-emerald-600"
                                     }`}
                             >
                                 {item.label}
@@ -64,30 +64,26 @@ export default function Navbar() {
                             Custom Order
                         </button>
 
-                        {/* Cart Button */}
-                        <button
-                            onClick={() => {
-                                if (!auth.user) {
-                                    router.visit("/login");
-                                } else {
-                                    router.visit("/cart");
-                                }
-                            }}
-                            className="px-4 py-2 rounded-full text-black hover:text-emerald-600 transition-colors duration-200 relative"
-                        >
-                            <ShoppingCart className="h-6 w-6 inline-block" />
-                            {auth.user && cartCount > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                                    {cartCount > 99 ? "99+" : cartCount}
-                                </span>
-                            )}
+                        
+                        <button onClick={() => router.visit("/cart")} className="px-4 py-2 rounded-full text-black hover:text-emerald-600 transition-colors duration-200">
+                            <div className="relative">
+                                <ShoppingCart className="h-6 w-6" />
+
+                                {cartCount > 0 && (
+                                   <span className="absolute -top-2 -right-2 flex items-center justify-center bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 shadow-md">
+                                   {cartCount > 99 ? "99+" : cartCount}
+                                 </span>
+                                 
+                                )}
+                            </div>
                         </button>
+
                     </nav>
 
                     {/* Theme Toggle & Auth Buttons */}
                     <div className="flex items-center gap-3">
                         {/* Dark/Light Mode Toggle */}
-                        <AppearanceToggleDropdown />
+                     
                         {auth.user ? (
                             <>
                                 {/* User Avatar with Name */}

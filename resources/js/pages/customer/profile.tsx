@@ -5,7 +5,7 @@ import Footer from '@/Components/common/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { User, ShoppingBag, Lock, LogOut } from 'lucide-react';
+import { User, ShoppingBag, Lock, LogOut, ShirtIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Order {
@@ -96,6 +96,15 @@ export default function CustomerProfile({ user, recentOrders, stats, flash }: Pr
                                             {item.label}
                                         </button>
                                     ))}
+                                    
+                                    {/* Custom Orders Link */}
+                                    <button
+                                        onClick={() => router.visit('/my-custom-orders')}
+                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition text-gray-700 hover:bg-emerald-50"
+                                    >
+                                        <ShirtIcon className="w-5 h-5" />
+                                        Custom Orders
+                                    </button>
 
                                     <div className="pt-3 border-t">
                                         <button
@@ -195,6 +204,7 @@ export default function CustomerProfile({ user, recentOrders, stats, flash }: Pr
                                                     <div className="flex justify-between">
                                                         <div>
                                                             <p className="font-semibold">#{order.order_number}</p>
+                                                            
                                                             <p className="text-sm text-gray-500">
                                                                 {new Date(order.created_at).toLocaleDateString()}
                                                             </p>
@@ -220,7 +230,7 @@ export default function CustomerProfile({ user, recentOrders, stats, flash }: Pr
                                         onSubmit={(e) => {
                                             e.preventDefault();
                                             updatePassword('/customer/profile/password', {
-                                                onSuccess: reset,
+                                                onSuccess: () => reset(),
                                             });
                                         }}
                                         className="space-y-6 max-w-md"

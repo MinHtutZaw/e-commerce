@@ -30,15 +30,15 @@ interface Payment {
     bank: string;
     transaction_id: string;
     amount: number;
-    status: 'pending' | 'paid' | 'failed' | 'refunded';
+    status: 'pending' | 'paid' | 'failed' ;
     created_at: string;
 }
 
 interface Order {
     id: number;
     order_number: string;
-    status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-    payment_status: 'unpaid' | 'pending' | 'paid' | 'failed' | 'refunded';
+    status: 'pending' | 'processing' |  'delivered' ;
+    payment_status: 'unpaid' | 'pending' | 'paid' ;
     total_amount: number;
     notes?: string;
     created_at: string;
@@ -53,21 +53,18 @@ interface Props {
 const paymentStatusLabel: Record<string, string> = {
     unpaid: 'Unpaid',
     pending: 'Submitted',
-    paid: 'Verified',
-    failed: 'Rejected',
-    refunded: 'Refunded',
+    paid: 'Paid'
 };
 
 export default function CustomerOrderDetails({ order }: Props) {
     const getStatusColor = (status: string) => {
         const colors: Record<string, string> = {
             unpaid: 'bg-gray-100 text-gray-800 border-gray-300',
-            pending: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-            confirmed: 'bg-blue-100 text-blue-800 border-blue-300',
+            pending: 'bg-blue-100 text-blue-800 border-blue-300',
             processing: 'bg-purple-100 text-purple-800 border-purple-300',
+            delivered: 'bg-green-100 text-green-800 border-green-300',
             paid: 'bg-green-100 text-green-800 border-green-300',
-            failed: 'bg-red-100 text-red-800 border-red-300',
-            refunded: 'bg-gray-100 text-gray-800 border-gray-300',
+           
         };
         return colors[status] || 'bg-gray-100 text-gray-800 border-gray-300';
     };
@@ -212,8 +209,8 @@ export default function CustomerOrderDetails({ order }: Props) {
                             )}
                         </div>
 
-                        {/* Order Summary Sidebar - single sticky wrapper so both cards stay together on scroll */}
-                        <div className="lg:self-start sticky top-8 space-y-6 max-h-[calc(100vh-6rem)] overflow-y-auto">
+                        {/* Order Summary Sidebar */}
+                        <div className="lg:self-start  top-8 space-y-6 max-h-[calc(100vh-6rem)] overflow-y-auto">
                             {/* Order Summary */}
                             <div className="bg-white rounded-2xl p-6 shadow-lg">
                                 <h2 className="text-xl font-bold text-gray-900 mb-4">Order Summary</h2>
@@ -233,7 +230,7 @@ export default function CustomerOrderDetails({ order }: Props) {
 
                                 {/* Action Buttons */}
                                 <div className="mt-6 space-y-3">
-                                    {(order.payment_status === 'unpaid' || order.payment_status === 'failed') && (
+                                    {(order.payment_status === 'unpaid' ) && (
                                         <Button
                                             onClick={() => router.visit(`/checkout?order=${order.id}`)}
                                             className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
@@ -255,7 +252,7 @@ export default function CustomerOrderDetails({ order }: Props) {
                             <div className="bg-white rounded-2xl p-6 shadow-lg">
                                 <h2 className="text-xl font-bold text-gray-900 mb-4">Order Status</h2>
                                 <div className="space-y-4">
-                                    <div className={`flex items-center gap-3 ${order.status !== 'cancelled' ? 'text-green-600' : 'text-gray-400'}`}>
+                                    <div className={`flex items-center gap-3  'text-green-600'`}>
                                         <CheckCircle className="w-6 h-6 flex-shrink-0" />
                                         <span className="font-medium">Order Placed</span>
                                     </div>
