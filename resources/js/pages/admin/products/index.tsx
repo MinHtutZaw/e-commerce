@@ -1,12 +1,22 @@
 import AppLayout from '@/layouts/app-layout';
-import { Head, Link, usePage, router } from '@inertiajs/react';
+import { Head, Link, usePage, router, useForm } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Trash2, SquarePen, Plus, Package, Image as ImageIcon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import {
     Drawer,
     DrawerClose,
@@ -67,6 +77,10 @@ export default function Index() {
     const { products, flash } = usePage<PageProps>().props;
     const list = products.data || [];
     const from = (products.current_page - 1) * products.per_page;
+    
+    // useForm for delete
+    const { processing, delete: destroy } = useForm();
+    
     // Drawer state
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [categoryForm, setCategoryForm] = useState({
@@ -87,11 +101,15 @@ export default function Index() {
     }, [flash]);
 
     const handleDelete = (id: number) => {
-        if (confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
-            router.delete(`/admin/products/${id}`, {
-                preserveScroll: true,
-            });
-        }
+        destroy(`/admin/products/${id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Product deleted successfully');
+            },
+            onError: () => {
+                toast.error('Failed to delete product');
+            },
+        });
     };
     const handleCategorySubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -348,14 +366,38 @@ export default function Index() {
                                                     <SquarePen className="w-4 h-4" />
                                                 </Button>
                                             </Link>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleDelete(product.id)}
-                                                className="hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400"
+                                                        disabled={processing}
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Delete Product</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Are you sure you want to delete{" "}
+                                                            <span className="font-semibold">{product.name}</span>?
+                                                            This action cannot be undone.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction
+                                                            onClick={() => handleDelete(product.id)}
+                                                            className="bg-red-600 text-white hover:bg-red-700"
+                                                            disabled={processing}
+                                                        >
+                                                            Delete
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
                                         </div>
                                     </TableCell>
                                 </TableRow>

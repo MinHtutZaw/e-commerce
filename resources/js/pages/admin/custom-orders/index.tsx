@@ -3,7 +3,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Eye, Mail, Phone, User, ShirtIcon, CheckCircle, XCircle, Clock, DollarSign } from 'lucide-react';
+import { Eye, Mail, Phone, User, ShirtIcon, CheckCircle, XCircle, Clock, Ruler } from 'lucide-react';
 import { useState } from 'react';
 import {
     Table,
@@ -28,19 +28,11 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
     { title: 'Custom Orders', href: '/admin/custom-orders' },
 ];
-
-interface CustomOrderSize {
-    id: number;
-    size: string;
-    quantity: number;
-}
 
 interface User {
     id: number;
@@ -54,14 +46,17 @@ interface CustomOrder {
     id: number;
     user_id?: number;
     user?: User;
-    customer_type: string;
-    gender: string;
-    uniform_type: string;
+    customer_type: 'child' | 'adult';
+    fabric_type: string;
+    uniform_type?: string;
     notes?: string;
-    status: 'pending' | 'quoted' | 'confirmed' | 'processing' | 'completed' | 'cancelled';
-    quoted_price?: number;
-    sizes: CustomOrderSize[];
-    total_quantity?: number;
+    waist: string;
+    hip: string;
+    height: string;
+    quantity: number;
+    unit_price: number;
+    total_price: number;
+    status: 'pending' | 'confirmed' | 'processing' | 'completed' | 'cancelled';
     created_at: string;
     updated_at: string;
 }
@@ -79,22 +74,17 @@ interface Props {
 export default function Index({ customOrders }: Props) {
     const [selectedOrder, setSelectedOrder] = useState<CustomOrder | null>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
-    const [quotePrice, setQuotePrice] = useState('');
-    const [isSubmittingQuote, setIsSubmittingQuote] = useState(false);
 
     const getStatusBadge = (status: string) => {
         const variants: Record<string, { className: string; icon: any }> = {
             pending: { className: 'bg-yellow-100 text-yellow-800 border-yellow-300', icon: Clock },
-            quoted: { className: 'bg-blue-100 text-blue-800 border-blue-300', icon: DollarSign },
             confirmed: { className: 'bg-purple-100 text-purple-800 border-purple-300', icon: CheckCircle },
             processing: { className: 'bg-orange-100 text-orange-800 border-orange-300', icon: Clock },
             completed: { className: 'bg-green-100 text-green-800 border-green-300', icon: CheckCircle },
             cancelled: { className: 'bg-red-100 text-red-800 border-red-300', icon: XCircle },
         };
-
         const config = variants[status] || variants.pending;
         const Icon = config.icon;
-
         return (
             <Badge variant="outline" className={`flex items-center gap-1 w-fit ${config.className}`}>
                 <Icon className="h-3 w-3" />
@@ -104,55 +94,19 @@ export default function Index({ customOrders }: Props) {
     };
 
     const handleStatusChange = (orderId: number, newStatus: string) => {
-        router.put(`/admin/custom-orders/${orderId}/status`, {
-            status: newStatus,
-        }, {
+        router.put(`/admin/custom-orders/${orderId}/status`, { status: newStatus }, {
             preserveScroll: true,
-            onSuccess: () => {
-                toast.success('Status updated successfully!');
-            },
-            onError: () => {
-                toast.error('Failed to update status');
-            },
-        });
-    };
-
-    const handleQuoteSubmit = () => {
-        if (!selectedOrder || !quotePrice) return;
-        
-        setIsSubmittingQuote(true);
-        router.put(`/admin/custom-orders/${selectedOrder.id}/quote`, {
-            quoted_price: parseFloat(quotePrice),
-        }, {
-            preserveScroll: true,
-            onSuccess: () => {
-                toast.success('Quote submitted successfully!');
-                setQuotePrice('');
-                setDialogOpen(false);
-                setIsSubmittingQuote(false);
-            },
-            onError: () => {
-                toast.error('Failed to submit quote');
-                setIsSubmittingQuote(false);
-            },
+            onSuccess: () => toast.success('Status updated successfully!'),
+            onError: () => toast.error('Failed to update status'),
         });
     };
 
     const handleViewDetails = (order: CustomOrder) => {
         setSelectedOrder(order);
-        setQuotePrice(order.quoted_price?.toString() || '');
         setDialogOpen(true);
     };
 
-    const getTotalQuantity = (order: CustomOrder) => {
-        if (order.total_quantity !== undefined) return order.total_quantity;
-        return order.sizes?.reduce((sum, s) => sum + s.quantity, 0) || 0;
-    };
-
-    const getSizesSummary = (order: CustomOrder) => {
-        if (!order.sizes || order.sizes.length === 0) return 'No sizes';
-        return order.sizes.map(s => `${s.size}:${s.quantity}`).join(' ');
-    };
+    const formatPrice = (price: number) => new Intl.NumberFormat('en-US').format(price) + ' MMK';
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -162,47 +116,21 @@ export default function Index({ customOrders }: Props) {
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                            Custom Orders
-                        </h1>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            Manage bulk uniform custom orders
-                        </p>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Custom Orders</h1>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Manage custom uniform orders</p>
                     </div>
                 </div>
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Total</p>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                            {customOrders.total}
-                        </p>
-                    </div>
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Pending</p>
-                        <p className="text-2xl font-bold text-yellow-600">
-                            {customOrders.data.filter(o => o.status === 'pending').length}
-                        </p>
-                    </div>
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Quoted</p>
-                        <p className="text-2xl font-bold text-blue-600">
-                            {customOrders.data.filter(o => o.status === 'quoted').length}
-                        </p>
-                    </div>
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Processing</p>
-                        <p className="text-2xl font-bold text-orange-600">
-                            {customOrders.data.filter(o => o.status === 'processing').length}
-                        </p>
-                    </div>
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Completed</p>
-                        <p className="text-2xl font-bold text-green-600">
-                            {customOrders.data.filter(o => o.status === 'completed').length}
-                        </p>
-                    </div>
+                    {['Total', 'Pending', 'Confirmed', 'Processing', 'Completed'].map((status, idx) => (
+                        <div key={idx} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{status}</p>
+                            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                {status === 'Total' ? customOrders.total : customOrders.data.filter(o => o.status.toLowerCase() === status.toLowerCase()).length}
+                            </p>
+                        </div>
+                    ))}
                 </div>
 
                 {/* Orders Table */}
@@ -210,41 +138,28 @@ export default function Index({ customOrders }: Props) {
                     <Table>
                         <TableHeader>
                             <TableRow className="bg-gray-50 dark:bg-gray-900/50">
-                                <TableHead className="font-semibold">ID</TableHead>
-                                <TableHead className="font-semibold">Customer</TableHead>
-                                <TableHead className="font-semibold">Contact</TableHead>
-                                <TableHead className="font-semibold">Type</TableHead>
-                                <TableHead className="font-semibold">Sizes</TableHead>
-                                <TableHead className="font-semibold">Status</TableHead>
-                                <TableHead className="font-semibold">Quote</TableHead>
-                                <TableHead className="font-semibold">Date</TableHead>
-                                <TableHead className="font-semibold">Actions</TableHead>
+                                {['ID', 'Customer', 'Contact', 'Type', 'Fabric', 'Qty', 'Total', 'Status', 'Date', 'Actions'].map(head => (
+                                    <TableHead key={head} className="font-semibold">{head}</TableHead>
+                                ))}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {customOrders.data.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={9} className="text-center py-8 text-gray-500">
-                                        No custom orders found
-                                    </TableCell>
+                                    <TableCell colSpan={10} className="text-center py-8 text-gray-500">No custom orders found</TableCell>
                                 </TableRow>
                             ) : (
                                 customOrders.data.map((order) => (
                                     <TableRow key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                         <TableCell className="font-medium">#{order.id}</TableCell>
                                         <TableCell>
-                                            <div>
-                                                <p className="font-medium">{order.user?.name || 'N/A'}</p>
-                                                <p className="text-xs text-gray-500 capitalize">
-                                                    {order.customer_type}
-                                                </p>
-                                            </div>
+                                            <p className="font-medium">{order.user?.name || 'N/A'}</p>
                                         </TableCell>
                                         <TableCell>
                                             <div className="text-sm space-y-1">
                                                 <p className="flex items-center gap-1">
                                                     <Mail className="h-3 w-3 text-gray-400" />
-                                                    <span className="truncate max-w-32">{order.user?.email || 'N/A'}</span>
+                                                    <span className="truncate max-w-24">{order.user?.email || 'N/A'}</span>
                                                 </p>
                                                 <p className="flex items-center gap-1">
                                                     <Phone className="h-3 w-3 text-gray-400" />
@@ -253,64 +168,67 @@ export default function Index({ customOrders }: Props) {
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="text-sm">
-                                                <Badge variant="outline" className="mb-1 capitalize">
-                                                    {order.gender}
-                                                </Badge>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    {order.uniform_type || 'N/A'}
-                                                </p>
-                                            </div>
+                                            <Badge variant="outline" className="capitalize">{order.customer_type}</Badge>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="text-sm">
-                                                <p className="font-bold text-emerald-600">{getTotalQuantity(order)} pcs</p>
-                                                <p className="text-xs text-gray-500">
-                                                    {getSizesSummary(order)}
-                                                </p>
-                                            </div>
+                                            <span className="text-sm">{order.fabric_type}</span>
                                         </TableCell>
                                         <TableCell>
-                                            <Select
-                                                value={order.status}
-                                                onValueChange={(value) => handleStatusChange(order.id, value)}
+                                            <span className="font-bold text-emerald-600">{order.quantity}</span>
+                                        </TableCell>
+                                        <TableCell>
+                                            <span className="font-medium text-emerald-600">{formatPrice(order.total_price)}</span>
+                                        </TableCell>
+                                        <TableCell>
+                                            <span
+                                                className={`px-2 py-1 rounded text-xs font-medium ${order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                        order.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                                                            order.status === 'processing' ? 'bg-purple-100 text-purple-800' :
+                                                                order.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                                                    order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                                                        'bg-gray-100 text-gray-800'
+                                                    }`}
                                             >
-                                                <SelectTrigger className="w-32 h-8 text-xs">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="pending">Pending</SelectItem>
-                                                    <SelectItem value="quoted">Quoted</SelectItem>
-                                                    <SelectItem value="confirmed">Confirmed</SelectItem>
-                                                    <SelectItem value="processing">Processing</SelectItem>
-                                                    <SelectItem value="completed">Completed</SelectItem>
-                                                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                                                </SelectContent>
-                                            </Select>
+                                                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                            </span>
+                                        </TableCell>
+
+                                        <TableCell>
+                                            <p className="text-sm">{new Date(order.created_at).toLocaleDateString()}</p>
                                         </TableCell>
                                         <TableCell>
-                                            {order.quoted_price ? (
-                                                <span className="font-medium text-emerald-600">
-                                                    {Number(order.quoted_price).toLocaleString()} MMK
-                                                </span>
-                                            ) : (
-                                                <span className="text-gray-400 text-sm">Not set</span>
-                                            )}
-                                        </TableCell>
-                                        <TableCell>
-                                            <p className="text-sm">
-                                                {new Date(order.created_at).toLocaleDateString()}
-                                            </p>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={() => handleViewDetails(order)}
-                                            >
-                                                <Eye className="h-4 w-4 mr-1" />
-                                                View
-                                            </Button>
+                                            <div className="flex gap-1">
+                                                <Button size="sm" variant="outline" onClick={() => handleViewDetails(order)}>
+                                                    <Eye className="h-4 w-4" />
+                                                </Button>
+                                                {order.status === 'pending' && (
+                                                    <Button
+                                                        size="sm"
+                                                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                                                        onClick={() => handleStatusChange(order.id, 'confirmed')}
+                                                    >
+                                                        Confirm
+                                                    </Button>
+                                                )}
+                                                {order.status === 'confirmed' && (
+                                                    <Button
+                                                        size="sm"
+                                                        className="bg-orange-600 hover:bg-orange-700 text-white"
+                                                        onClick={() => handleStatusChange(order.id, 'processing')}
+                                                    >
+                                                        Process
+                                                    </Button>
+                                                )}
+                                                {order.status === 'processing' && (
+                                                    <Button
+                                                        size="sm"
+                                                        className="bg-green-600 hover:bg-green-700 text-white"
+                                                        onClick={() => handleStatusChange(order.id, 'completed')}
+                                                    >
+                                                        Complete
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))
@@ -341,14 +259,12 @@ export default function Index({ customOrders }: Props) {
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Custom Order #{selectedOrder?.id}</DialogTitle>
-                        <DialogDescription>
-                            Complete information about this custom order
-                        </DialogDescription>
+                        <DialogDescription>Complete information about this custom order</DialogDescription>
                     </DialogHeader>
 
                     {selectedOrder && (
                         <div className="space-y-6">
-                            {/* Status */}
+                            {/* Status & Date */}
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm text-gray-500">Current Status</p>
@@ -356,77 +272,86 @@ export default function Index({ customOrders }: Props) {
                                 </div>
                                 <div className="text-right">
                                     <p className="text-sm text-gray-500">Order Date</p>
-                                    <p className="font-medium">
-                                        {new Date(selectedOrder.created_at).toLocaleString()}
-                                    </p>
+                                    <p className="font-medium">{new Date(selectedOrder.created_at).toLocaleString()}</p>
                                 </div>
                             </div>
 
                             {/* Customer Info */}
                             <div className="border rounded-lg p-4">
                                 <h3 className="font-semibold mb-3 flex items-center gap-2">
-                                    <User className="h-4 w-4" />
-                                    Customer Information
+                                    <User className="h-4 w-4" /> Customer Information
                                 </h3>
                                 <div className="grid grid-cols-2 gap-4 text-sm">
-                                    <div>
-                                        <p className="text-gray-500">Name</p>
-                                        <p className="font-medium">{selectedOrder.user?.name || 'N/A'}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500">Type</p>
-                                        <p className="font-medium capitalize">{selectedOrder.customer_type}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500">Email</p>
-                                        <p className="font-medium">{selectedOrder.user?.email || 'N/A'}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500">Phone</p>
-                                        <p className="font-medium">{selectedOrder.user?.phone || 'N/A'}</p>
-                                    </div>
-                                    {selectedOrder.user?.address && (
-                                        <div className="col-span-2">
-                                            <p className="text-gray-500">Address</p>
-                                            <p className="font-medium">{selectedOrder.user.address}</p>
-                                        </div>
-                                    )}
+                                    <div><p className="text-gray-500">Name</p><p className="font-medium">{selectedOrder.user?.name || 'N/A'}</p></div>
+                                    <div><p className="text-gray-500">Email</p><p className="font-medium">{selectedOrder.user?.email || 'N/A'}</p></div>
+                                    <div><p className="text-gray-500">Phone</p><p className="font-medium">{selectedOrder.user?.phone || 'N/A'}</p></div>
+                                    {selectedOrder.user?.address && <div><p className="text-gray-500">Address</p><p className="font-medium">{selectedOrder.user.address}</p></div>}
                                 </div>
                             </div>
 
-                            {/* Uniform Specs */}
+                            {/* Order Specifications */}
                             <div className="border rounded-lg p-4">
                                 <h3 className="font-semibold mb-3 flex items-center gap-2">
-                                    <ShirtIcon className="h-4 w-4" />
-                                    Uniform Specifications
+                                    <ShirtIcon className="h-4 w-4" /> Order Specifications
                                 </h3>
                                 <div className="grid grid-cols-2 gap-4 text-sm">
                                     <div>
-                                        <p className="text-gray-500">Gender</p>
-                                        <Badge variant="outline" className="capitalize">{selectedOrder.gender}</Badge>
+                                        <p className="text-gray-500">Customer Type</p>
+                                        <Badge variant="outline" className="capitalize">{selectedOrder.customer_type}</Badge>
                                     </div>
                                     <div>
-                                        <p className="text-gray-500">Uniform Type</p>
-                                        <Badge variant="outline">{selectedOrder.uniform_type || 'N/A'}</Badge>
+                                        <p className="text-gray-500">Fabric Type</p>
+                                        <p className="font-medium">{selectedOrder.fabric_type}</p>
+                                    </div>
+                                    {selectedOrder.uniform_type && (
+                                        <div>
+                                            <p className="text-gray-500">Uniform Type</p>
+                                            <p className="font-medium">{selectedOrder.uniform_type}</p>
+                                        </div>
+                                    )}
+                                    <div>
+                                        <p className="text-gray-500">Quantity</p>
+                                        <p className="font-bold text-emerald-600">{selectedOrder.quantity} pcs</p>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Sizes */}
+                            {/* Measurements */}
                             <div className="border rounded-lg p-4">
-                                <h3 className="font-semibold mb-3">Order Quantities</h3>
-                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                                    {selectedOrder.sizes && selectedOrder.sizes.map((size) => (
-                                        <div key={size.id} className="bg-gray-50 dark:bg-gray-900 p-3 rounded text-center">
-                                            <p className="text-gray-500 text-xs">{size.size}</p>
-                                            <p className="text-xl font-bold">{size.quantity}</p>
-                                        </div>
-                                    ))}
-                                    <div className="bg-emerald-50 dark:bg-emerald-950 p-3 rounded text-center border-2 border-emerald-500">
-                                        <p className="text-emerald-700 dark:text-emerald-300 text-xs">Total</p>
-                                        <p className="text-xl font-bold text-emerald-700 dark:text-emerald-300">
-                                            {getTotalQuantity(selectedOrder)}
-                                        </p>
+                                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                                    <Ruler className="h-4 w-4" /> Measurements (cm)
+                                </h3>
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded text-center">
+                                        <p className="text-gray-500 text-xs">Waist</p>
+                                        <p className="text-xl font-bold">{selectedOrder.waist || '—'}</p>
+                                    </div>
+                                    <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded text-center">
+                                        <p className="text-gray-500 text-xs">Hip</p>
+                                        <p className="text-xl font-bold">{selectedOrder.hip || '—'}</p>
+                                    </div>
+                                    <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded text-center">
+                                        <p className="text-gray-500 text-xs">Height</p>
+                                        <p className="text-xl font-bold">{selectedOrder.height || '—'}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Price Info */}
+                            <div className="border rounded-lg p-4 bg-emerald-50 dark:bg-emerald-950/30">
+                                <h3 className="font-semibold mb-3">Price Details</h3>
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                        <span>Unit Price:</span>
+                                        <span>{formatPrice(selectedOrder.unit_price)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Quantity:</span>
+                                        <span>x {selectedOrder.quantity}</span>
+                                    </div>
+                                    <div className="flex justify-between border-t pt-2 font-semibold text-lg">
+                                        <span>Total:</span>
+                                        <span className="text-emerald-600">{formatPrice(selectedOrder.total_price)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -434,44 +359,69 @@ export default function Index({ customOrders }: Props) {
                             {/* Notes */}
                             {selectedOrder.notes && (
                                 <div className="border rounded-lg p-4">
-                                    <h3 className="font-semibold mb-3">Additional Notes</h3>
-                                    <p className="text-sm bg-gray-50 dark:bg-gray-900 p-3 rounded">
-                                        {selectedOrder.notes}
-                                    </p>
+                                    <h3 className="font-semibold mb-2">Notes</h3>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">{selectedOrder.notes}</p>
                                 </div>
                             )}
 
-                            {/* Quote Section */}
-                            <div className="border rounded-lg p-4 bg-blue-50 dark:bg-blue-950/30">
-                                <h3 className="font-semibold mb-3 flex items-center gap-2">
-                                    <DollarSign className="h-4 w-4" />
-                                    Price Quote
-                                </h3>
-                                <div className="flex gap-3 items-end">
-                                    <div className="flex-1">
-                                        <Label htmlFor="quote">Quote Amount (MMK)</Label>
-                                        <Input
-                                            id="quote"
-                                            type="number"
-                                            value={quotePrice}
-                                            onChange={(e) => setQuotePrice(e.target.value)}
-                                            placeholder="Enter price quote"
-                                            className="mt-1"
-                                        />
-                                    </div>
-                                    <Button 
-                                        onClick={handleQuoteSubmit}
-                                        disabled={!quotePrice || isSubmittingQuote}
-                                        className="bg-emerald-600 hover:bg-emerald-700"
-                                    >
-                                        {isSubmittingQuote ? 'Saving...' : 'Save Quote'}
-                                    </Button>
+                            {/* Action Buttons */}
+                            <div className="border-t pt-4">
+                                <h3 className="font-semibold mb-3">Actions</h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {selectedOrder.status === 'pending' && (
+                                        <Button
+                                            onClick={() => {
+                                                handleStatusChange(selectedOrder.id, 'confirmed');
+                                                setDialogOpen(false);
+                                            }}
+                                            className="bg-purple-600 hover:bg-purple-700"
+                                        >
+                                            <CheckCircle className="h-4 w-4 mr-2" />
+                                            Confirm Order
+                                        </Button>
+                                    )}
+                                    {selectedOrder.status === 'confirmed' && (
+                                        <Button
+                                            onClick={() => {
+                                                handleStatusChange(selectedOrder.id, 'processing');
+                                                setDialogOpen(false);
+                                            }}
+                                            className="bg-orange-600 hover:bg-orange-700"
+                                        >
+                                            <Clock className="h-4 w-4 mr-2" />
+                                            Start Processing
+                                        </Button>
+                                    )}
+                                    {selectedOrder.status === 'processing' && (
+                                        <Button
+                                            onClick={() => {
+                                                handleStatusChange(selectedOrder.id, 'completed');
+                                                setDialogOpen(false);
+                                            }}
+                                            className="bg-green-600 hover:bg-green-700"
+                                        >
+                                            <CheckCircle className="h-4 w-4 mr-2" />
+                                            Mark Completed
+                                        </Button>
+                                    )}
+                                    {selectedOrder.status !== 'cancelled' && selectedOrder.status !== 'completed' && (
+                                        <Button
+                                            variant="destructive"
+                                            onClick={() => {
+                                                handleStatusChange(selectedOrder.id, 'cancelled');
+                                                setDialogOpen(false);
+                                            }}
+                                        >
+                                            <XCircle className="h-4 w-4 mr-2" />
+                                            Cancel Order
+                                        </Button>
+                                    )}
+                                    {(selectedOrder.status === 'completed' || selectedOrder.status === 'cancelled') && (
+                                        <p className="text-sm text-gray-500 italic">
+                                            This order is {selectedOrder.status}. No further actions available.
+                                        </p>
+                                    )}
                                 </div>
-                                {selectedOrder.quoted_price && (
-                                    <p className="mt-2 text-sm text-gray-600">
-                                        Current quote: <span className="font-bold text-emerald-600">{Number(selectedOrder.quoted_price).toLocaleString()} MMK</span>
-                                    </p>
-                                )}
                             </div>
                         </div>
                     )}

@@ -15,15 +15,18 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null');
             $table->enum('customer_type', ['child', 'adult']);
-            $table->enum('gender', ['male', 'female', 'unisex'])->default('unisex');
-            $table->string('uniform_type')->nullable(); // Changed to string for flexibility
+            $table->string('uniform_type')->nullable(); 
             $table->text('notes')->nullable();
-            $table->enum('status', ['pending', 'quoted', 'confirmed', 'processing', 'completed', 'cancelled'])->default('pending');
-            $table->decimal('quoted_price', 10, 2)->nullable();
+            $table->enum('status', ['pending',  'confirmed', 'processing', 'completed', 'cancelled'])->default('pending');
+            $table->string('fabric_type')->nullable();
+            $table->decimal('waist', 5, 2)->nullable();
+            $table->decimal('hip', 5, 2)->nullable();
+            $table->decimal('height', 5, 2)->nullable();
+            $table->integer('quantity')->default(1);
+            $table->integer('unit_price')->nullable();
+            $table->integer('total_price')->nullable();
             $table->timestamps();
-            
             $table->index('status');
-            $table->index('user_id');
         });
     }
 

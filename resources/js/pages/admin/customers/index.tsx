@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router, usePage, useForm } from '@inertiajs/react';
 import { Users, Search, Edit, Trash2, UserCheck, UserX, DollarSign, ShoppingBag } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -12,6 +12,17 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
@@ -76,6 +87,7 @@ export default function CustomersIndex({ customers, filters }: Props) {
         currentStatus: '',
     });
 
+    const { processing, delete: destroy } = useForm();
     const { flash } = usePage().props as { flash?: { success?: string; error?: string } };
 
     useEffect(() => {
@@ -97,12 +109,16 @@ export default function CustomersIndex({ customers, filters }: Props) {
     };
     
 
-    const handleDelete = (id: number, name: string) => {
-        if (confirm(`Are you sure you want to delete customer "${name}"? This action cannot be undone.`)) {
-            router.delete(`/admin/customers/${id}`, {
-                preserveScroll: true,
-            });
-        }
+    const handleDelete = (id: number) => {
+        destroy(`/admin/customers/${id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Customer deleted successfully');
+            },
+            onError: () => {
+                toast.error('Failed to delete customer');
+            },
+        });
     };
 
     const openStatusModal = (id: number, name: string, currentStatus: string) => {
@@ -327,15 +343,39 @@ export default function CustomersIndex({ customers, filters }: Props) {
                                                 >
                                                     {customer.status === 'Active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                                                 </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => handleDelete(customer.id, customer.name)}
-                                                    className="hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400"
-                                                    title="Delete Customer"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400"
+                                                            title="Delete Customer"
+                                                            disabled={processing}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Delete Customer</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                Are you sure you want to delete{" "}
+                                                                <span className="font-semibold">{customer.name}</span>?
+                                                                This action cannot be undone.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction
+                                                                onClick={() => handleDelete(customer.id)}
+                                                                className="bg-red-600 text-white hover:bg-red-700"
+                                                                disabled={processing}
+                                                            >
+                                                                Delete
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
                                             </div>
                                         </TableCell>
                                     </TableRow>

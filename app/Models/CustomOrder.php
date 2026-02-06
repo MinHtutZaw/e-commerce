@@ -12,42 +12,31 @@ class CustomOrder extends Model
     protected $fillable = [
         'user_id',
         'customer_type',
-        'gender',
+        'fabric_type',
         'uniform_type',
         'notes',
+        'waist',
+        'hip',
+        'height',
+        'quantity',
+        'unit_price',
+        'total_price',
         'status',
-        'quoted_price',
     ];
 
     protected $casts = [
-        'quoted_price' => 'decimal:2',
+        'waist' => 'decimal:2',
+        'hip' => 'decimal:2',
+        'height' => 'decimal:2',
+        'unit_price' => 'integer',
+        'total_price' => 'integer',
     ];
 
-    // Automatically append total_quantity to JSON
-    protected $appends = ['total_quantity'];
-
     /**
-     * Get the user who placed this custom order.
+     * User who placed this order
      */
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-
-
-    /**
-     * Get all sizes for this custom order.
-     */
-    public function sizes()
-    {
-        return $this->hasMany(CustomOrderSize::class);
-    }
-
-    /**
-     * Get total quantity (sum of all sizes).
-     */
-    public function getTotalQuantityAttribute(): int
-    {
-        return $this->sizes()->sum('quantity');
     }
 }

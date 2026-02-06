@@ -17,8 +17,6 @@ return new class extends Migration
             $table->string('size', 10); // S, M, L, XL, XXL, etc.
             $table->unsignedInteger('quantity')->default(0);
             $table->timestamps();
-
-            $table->index('custom_order_id');
             $table->unique(['custom_order_id', 'size']); // Prevent duplicate sizes per order
         });
     }

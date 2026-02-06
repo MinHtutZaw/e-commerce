@@ -233,6 +233,7 @@ export default function Checkout({ order, flash }: Props) {
                                                         </label>
                                                         <input
                                                             type="text"
+                                                            
                                                             value={currentPaymentMethod.bank_name}
                                                             readOnly
                                                             className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 font-medium"

@@ -54,17 +54,21 @@ Route::get('/about', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
         $user = Auth::user();
-        
         // Get stats based on role
         $stats = [];
         if ($user->role === 'admin') {
+            $orderRevenue = \App\Models\Order::where('payment_status', 'paid')->sum('total_amount');
+            // Include confirmed, processing, and completed custom orders in revenue
+            $customOrderRevenue = \App\Models\CustomOrder::whereIn('status', ['confirmed', 'processing', 'completed'])->sum('total_price');
             $stats = [
                 'totalOrders' => \App\Models\Order::count(),
                 'pendingOrders' => \App\Models\Order::where('status', 'pending')->count(),
                 'totalUsers' => \App\Models\User::where('role', 'customer')->count(),
                 'totalProducts' => \App\Models\Product::count(),
                 'pendingPayments' => \App\Models\Payment::where('status', 'pending')->count(),
-                'totalRevenue' => \App\Models\Order::where('payment_status', 'paid')->sum('total_amount'),
+                'totalRevenue' => $orderRevenue + $customOrderRevenue,
+                'totalCustomOrders' => \App\Models\CustomOrder::count(),
+                'pendingCustomOrders' => \App\Models\CustomOrder::where('status', 'pending')->count(),
             ];
         } else {
             $stats = [

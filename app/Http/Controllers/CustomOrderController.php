@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\CustomOrder;
-use App\Models\CustomOrderSize;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -12,147 +11,131 @@ use Inertia\Inertia;
 
 class CustomOrderController extends Controller
 {
-    /**
-     * Display the custom order form
-     */
+    private const BASE_PRICE = [
+        'child' => 5000,
+        'adult' => 8000,
+    ];
+
+    private const FABRIC_PRICE = [
+        'Cotton' => 2000,
+        'Polyester' => 1500,
+        'Dry-fit' => 3000,
+    ];
+
+    // Show form
     public function create()
     {
         return Inertia::render('landing/custom-order');
     }
 
-    /**
-     * Display a listing of custom orders (Admin)
-     */
-    public function index()
-    {
-        $customOrders = CustomOrder::with(['user', 'sizes'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(10)
-            ->through(function ($order) {
-                $order->total_quantity = $order->sizes->sum('quantity');
-                return $order;
-            });
-
-        return Inertia::render('admin/custom-orders/index', [
-            'customOrders' => $customOrders,
-        ]);
-    }
-
-    /**
-     * Display customer's own custom orders
-     */
-    public function customerIndex()
-    {
-        $customOrders = CustomOrder::with(['sizes'])
-            ->where('user_id', Auth::id())
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($order) {
-                $order->total_quantity = $order->sizes->sum('quantity');
-                return $order;
-            });
-
-        return Inertia::render('customer/custom-orders', [
-            'customOrders' => $customOrders,
-        ]);
-    }
-
-    /**
-     * Store a new custom order
-     */
+    // Store order
     public function store(Request $request)
     {
         $validated = $request->validate([
             'customer_type' => 'required|in:child,adult',
-            'gender' => 'required|in:male,female,unisex',
+            'fabric_type' => 'required|string|in:Cotton,Polyester,Dry-fit',
+            'waist' => 'nullable|numeric|min:0',
+            'hip' => 'nullable|numeric|min:0',
+            'height' => 'nullable|numeric|min:0',
+            'quantity' => 'required|integer|min:1',
             'uniform_type' => 'nullable|string|max:255',
-            'sizes' => 'required|array|min:1',
-            'sizes.*.size' => 'required|string|max:10',
-            'sizes.*.quantity' => 'required|integer|min:1',
-            'notes' => 'nullable|string',
+            'notes' => 'nullable|string|max:1000',
         ]);
-
-        // Validate minimum total quantity
-        $totalQuantity = collect($request->sizes)->sum('quantity');
-        if ($totalQuantity < 10) {
-            return back()->withErrors(['sizes' => 'Minimum total quantity is 10 items.']);
-        }
-
+    
+        $unitPrice = self::BASE_PRICE[$validated['customer_type']]
+                   + self::FABRIC_PRICE[$validated['fabric_type']];
+    
+        $totalPrice = $unitPrice * $validated['quantity'];
+    
         DB::beginTransaction();
         try {
-            // Create custom order (user info comes from authenticated user)
-            $customOrder = CustomOrder::create([
+            CustomOrder::create([
                 'user_id' => Auth::id(),
-                'customer_type' => $request->customer_type,
-                'gender' => $request->gender,
-                'uniform_type' => $request->uniform_type ?? 'school',
-                'notes' => $request->notes,
+                'customer_type' => $validated['customer_type'],
+                'fabric_type' => $validated['fabric_type'],
+                'uniform_type' => $validated['uniform_type'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+                'waist' => $validated['waist'],
+                'hip' => $validated['hip'],
+                'height' => $validated['height'],
+                'quantity' => $validated['quantity'],
+                'unit_price' => $unitPrice,
+                'total_price' => $totalPrice,
                 'status' => 'pending',
             ]);
-
-            // Create sizes
-            foreach ($request->sizes as $sizeData) {
-                if (!empty($sizeData['size']) && $sizeData['quantity'] > 0) {
-                    $customOrder->sizes()->create([
-                        'size' => $sizeData['size'],
-                        'quantity' => (int) $sizeData['quantity'],
-                    ]);
-                }
-            }
-
+    
             DB::commit();
-
-            return back()->with('success', 'Custom order submitted successfully! We will contact you soon with a quote.');
+    
+            // ✅ Inertia-friendly response: redirect back with success flash
+            return redirect()->back()->with('success', 'Custom order submitted successfully! We will contact you soon.');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Custom order creation failed: ' . $e->getMessage());
-            return back()->withErrors(['error' => 'Failed to submit order. Please try again.']);
+            Log::error('Custom order creation failed: '.$e->getMessage());
+    
+            // ✅ Inertia-friendly server error
+            return redirect()->back()->withErrors(['error' => 'Failed to submit order. Please try again.']);
         }
     }
+    
+    
 
-    /**
-     * Show a specific custom order (Admin)
-     */
+    // Customer orders
+    public function customerIndex()
+    {
+        $orders = CustomOrder::where('user_id', Auth::id())
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return Inertia::render('customer/custom-orders', [
+            'customOrders' => $orders,
+        ]);
+    }
+
+    // Admin: List all custom orders
+    public function index(Request $request)
+    {
+        $orders = CustomOrder::with('user')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+
+        return Inertia::render('admin/custom-orders/index', [
+            'customOrders' => $orders,
+        ]);
+    }
+
+    // Admin: Show single custom order
     public function show($id)
     {
-        $customOrder = CustomOrder::with(['user', 'product', 'sizes'])->findOrFail($id);
-        $customOrder->total_quantity = $customOrder->sizes->sum('quantity');
+        $order = CustomOrder::with('user')->findOrFail($id);
 
         return Inertia::render('admin/custom-orders/show', [
-            'customOrder' => $customOrder,
+            'customOrder' => $order,
         ]);
     }
 
-    /**
-     * Update the status of a custom order (Admin)
-     */
+    // Admin: Update order status
     public function updateStatus(Request $request, $id)
     {
-        $request->validate([
-            'status' => 'required|in:pending,quoted,confirmed,processing,completed,cancelled',
+        $validated = $request->validate([
+            'status' => 'required|in:pending,confirmed,processing,completed,cancelled',
         ]);
 
-        $customOrder = CustomOrder::findOrFail($id);
-        $customOrder->update(['status' => $request->status]);
+        $order = CustomOrder::findOrFail($id);
+        $order->update(['status' => $validated['status']]);
 
-        return back()->with('success', 'Status updated successfully!');
+        return back()->with('success', 'Order status updated successfully.');
     }
 
-    /**
-     * Update quoted price (Admin)
-     */
+    // Admin: Update quote (kept for compatibility, but not used in simplified version)
     public function updateQuote(Request $request, $id)
     {
-        $request->validate([
+        $validated = $request->validate([
             'quoted_price' => 'required|numeric|min:0',
         ]);
 
-        $customOrder = CustomOrder::findOrFail($id);
-        $customOrder->update([
-            'quoted_price' => $request->quoted_price,
-            'status' => 'quoted',
-        ]);
+        $order = CustomOrder::findOrFail($id);
+        $order->update(['total_price' => $validated['quoted_price']]);
 
-        return back()->with('success', 'Quote updated successfully!');
+        return back()->with('success', 'Quote updated successfully.');
     }
 }
