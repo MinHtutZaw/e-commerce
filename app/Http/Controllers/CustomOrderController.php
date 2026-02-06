@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CustomOrder;
+use App\Models\CustomOrderPricing;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -11,16 +12,6 @@ use Inertia\Inertia;
 
 class CustomOrderController extends Controller
 {
-    private const BASE_PRICE = [
-        'child' => 5000,
-        'adult' => 8000,
-    ];
-
-    private const FABRIC_PRICE = [
-        'Cotton' => 2000,
-        'Polyester' => 1500,
-        'Dry-fit' => 3000,
-    ];
 
     // Show form
     public function create()
@@ -31,9 +22,15 @@ class CustomOrderController extends Controller
     // Store order
     public function store(Request $request)
     {
+        // Get active fabric types from database
+        $activeFabrics = CustomOrderPricing::where('type', 'fabric')
+            ->where('is_active', true)
+            ->pluck('name')
+            ->toArray();
+        
         $validated = $request->validate([
             'customer_type' => 'required|in:child,adult',
-            'fabric_type' => 'required|string|in:Cotton,Polyester,Dry-fit',
+            'fabric_type' => 'required|string|in:' . implode(',', $activeFabrics),
             'waist' => 'nullable|numeric|min:0',
             'hip' => 'nullable|numeric|min:0',
             'height' => 'nullable|numeric|min:0',
@@ -42,9 +39,13 @@ class CustomOrderController extends Controller
             'notes' => 'nullable|string|max:1000',
         ]);
     
-        $unitPrice = self::BASE_PRICE[$validated['customer_type']]
-                   + self::FABRIC_PRICE[$validated['fabric_type']];
-    
+        // Get prices from database
+        $basePrices = CustomOrderPricing::getBasePrices();
+        $fabricPrices = CustomOrderPricing::getFabricPrices();
+        
+        $basePrice = $basePrices[$validated['customer_type']] ?? 0;
+        $fabricPrice = $fabricPrices[$validated['fabric_type']] ?? 0;
+        $unitPrice = $basePrice + $fabricPrice;
         $totalPrice = $unitPrice * $validated['quantity'];
     
         DB::beginTransaction();
@@ -66,13 +67,11 @@ class CustomOrderController extends Controller
     
             DB::commit();
     
-            // ✅ Inertia-friendly response: redirect back with success flash
             return redirect()->back()->with('success', 'Custom order submitted successfully! We will contact you soon.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Custom order creation failed: '.$e->getMessage());
     
-            // ✅ Inertia-friendly server error
             return redirect()->back()->withErrors(['error' => 'Failed to submit order. Please try again.']);
         }
     }

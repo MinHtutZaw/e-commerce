@@ -66,7 +66,7 @@ interface Props {
     userRole: 'customer' | 'admin';
 }
 
-type PaymentModalPayload = { paymentId: number; status: 'paid' | 'failed'; label: string } | null;
+type PaymentModalPayload = { paymentId: number; status: 'paid' | 'failed' | 'pending'; label: string } | null;
 
 export default function OrderDetails({ order, userRole }: Props) {
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -95,16 +95,22 @@ export default function OrderDetails({ order, userRole }: Props) {
         });
     };
 
-    const openPaymentModal = (paymentId: number, status: 'paid' | 'failed') => {
+    const openPaymentModal = (paymentId: number, status: 'paid' | 'failed' | 'pending') => {
+        const labels = {
+            paid: 'Verify payment',
+            failed: 'Reject payment',
+            pending: 'Reset to pending',
+        };
         setPaymentModal({
             paymentId,
             status,
-            label: status === 'paid' ? 'Verify payment' : 'Reject payment',
+            label: labels[status],
         });
     };
 
     const handleConfirmPaymentAction = () => {
         if (!paymentModal) return;
+
         router.put(`/payments/${paymentModal.paymentId}/status`, {
             status: paymentModal.status,
         }, {
@@ -112,6 +118,7 @@ export default function OrderDetails({ order, userRole }: Props) {
             onSuccess: () => setPaymentModal(null),
         });
     };
+
 
     const statusConfig = {
         pending: {
@@ -143,7 +150,7 @@ export default function OrderDetails({ order, userRole }: Props) {
         pending: {
             color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
             icon: Clock,
-            label: 'Submitted'
+            label: 'Pending'
         },
         paid: {
             color: 'bg-green-100 text-green-800 border-green-200',
@@ -277,7 +284,6 @@ export default function OrderDetails({ order, userRole }: Props) {
                                 </div>
                             </div>
                         </div>
-
                         {/* Payment History */}
                         {order.payments && order.payments.length > 0 && (
                             <div className="rounded-lg border bg-white p-6 shadow-sm">
@@ -285,6 +291,7 @@ export default function OrderDetails({ order, userRole }: Props) {
                                     <CreditCard className="h-5 w-5 text-emerald-600" />
                                     <h2 className="text-xl font-semibold text-gray-900">Payment History</h2>
                                 </div>
+
                                 <div className="space-y-3">
                                     {order.payments.map((payment) => {
                                         const paymentConfig = paymentStatusConfig[payment.status as keyof typeof paymentStatusConfig] || paymentStatusConfig.pending;
@@ -298,12 +305,8 @@ export default function OrderDetails({ order, userRole }: Props) {
                                                             <PaymentStatusIcon className="h-5 w-5 text-gray-600" />
                                                         </div>
                                                         <div>
-                                                            <p className="font-semibold text-gray-900">
-                                                                {payment.bank} Pay
-                                                            </p>
-                                                            <p className="text-sm text-gray-600">
-                                                                Transaction ID: ***{payment.transaction_id}
-                                                            </p>
+                                                            <p className="font-semibold text-gray-900">{payment.bank} Pay</p>
+                                                            <p className="text-sm text-gray-600">Transaction ID: ***{payment.transaction_id}</p>
                                                             <p className="text-xs text-gray-500 mt-1">
                                                                 {new Date(payment.created_at).toLocaleDateString('en-US', {
                                                                     month: 'short',
@@ -316,9 +319,7 @@ export default function OrderDetails({ order, userRole }: Props) {
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
-                                                        <p className="font-bold text-gray-900">
-                                                            {payment.amount.toLocaleString()} MMK
-                                                        </p>
+                                                        <p className="font-bold text-gray-900">{payment.amount.toLocaleString()} MMK</p>
                                                         <span className={`mt-2 inline-block rounded-full border px-3 py-1 text-xs font-medium ${paymentConfig.color}`}>
                                                             {paymentConfig.label}
                                                         </span>
@@ -326,20 +327,38 @@ export default function OrderDetails({ order, userRole }: Props) {
                                                 </div>
 
                                                 {/* Admin Payment Actions */}
-                                                {userRole === 'admin' && payment.status === 'pending' && (
+                                                {userRole === 'admin' && (
                                                     <div className="flex gap-2 border-t pt-3">
-                                                        <button
-                                                            onClick={() => openPaymentModal(payment.id, 'paid')}
-                                                            className="flex-1 rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700"
-                                                        >
-                                                            Verify payment
-                                                        </button>
-                                                        <button
-                                                            onClick={() => openPaymentModal(payment.id, 'failed')}
-                                                            className="flex-1 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
-                                                        >
-                                                            Reject payment
-                                                        </button>
+                                                        {/* Pending payments: Verify / Reject */}
+                                                        {payment.status === 'pending' && (
+                                                            <>
+                                                                <button
+                                                                    onClick={() => openPaymentModal(payment.id, 'paid')}
+                                                                    className="flex-1 rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700"
+                                                                >
+                                                                    Verify payment
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => openPaymentModal(payment.id, 'failed')}
+                                                                    className="flex-1 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
+                                                                >
+                                                                    Reject payment
+                                                                </button>
+                                                            </>
+                                                        )}
+
+                                                        
+                                                        {/* Paid payments: Reset */}
+                                                        {userRole === 'admin' && payment.status === 'paid' && order.status !== 'delivered' && order.status !== 'processing' && (
+                                                            <button
+                                                                onClick={() => openPaymentModal(payment.id, 'pending')}
+                                                                className="flex-1 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
+                                                            >
+                                                                Reset payment
+                                                            </button>
+                                                        )}
+
+
                                                     </div>
                                                 )}
                                             </div>
@@ -348,6 +367,7 @@ export default function OrderDetails({ order, userRole }: Props) {
                                 </div>
                             </div>
                         )}
+
 
                         {/* Notes */}
                         {order.notes && (
@@ -433,7 +453,7 @@ export default function OrderDetails({ order, userRole }: Props) {
                                     <h2 className="mb-3 text-lg font-semibold text-gray-900">Order Actions</h2>
                                     {hasPendingPayment ? (
                                         <p className="text-sm text-amber-700 mb-3">
-                                            Verify or reject the submitted payment first. Order status can advance only after payment is verified.
+                                            Verify or reject the pending payment first. Order status can advance only after payment is verified.
                                         </p>
                                     ) : adminOrderNextAction ? (
                                         <div className="space-y-2">
@@ -504,7 +524,7 @@ export default function OrderDetails({ order, userRole }: Props) {
                 </div>
             </div>
 
-            {/* Payment verify/reject confirmation modal */}
+            {/* Payment verify/reject/reset confirmation modal */}
             <Dialog open={!!paymentModal} onOpenChange={(open) => !open && setPaymentModal(null)}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
@@ -512,7 +532,9 @@ export default function OrderDetails({ order, userRole }: Props) {
                         <DialogDescription>
                             {paymentModal?.status === 'paid'
                                 ? 'This will mark the payment as verified. The order can then be confirmed and processed.'
-                                : 'This will reject the payment. The customer may submit a new payment.'}
+                                : paymentModal?.status === 'failed'
+                                    ? 'This will reject the payment. The customer may submit a new payment.'
+                                    : 'This will reset the payment back to pending status.'}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter className="gap-2 sm:gap-0">
@@ -521,9 +543,15 @@ export default function OrderDetails({ order, userRole }: Props) {
                         </Button>
                         <Button
                             onClick={handleConfirmPaymentAction}
-                            className={paymentModal?.status === 'paid' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+                            className={
+                                paymentModal?.status === 'paid'
+                                    ? 'bg-green-600 hover:bg-green-700'
+                                    : paymentModal?.status === 'failed'
+                                        ? 'bg-red-600 hover:bg-red-700'
+                                        : 'bg-yellow-600 hover:bg-yellow-700'
+                            }
                         >
-                            {paymentModal?.status === 'paid' ? 'Verify payment' : 'Reject payment'}
+                            {paymentModal?.label}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

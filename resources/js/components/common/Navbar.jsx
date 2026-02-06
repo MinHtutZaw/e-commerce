@@ -10,7 +10,7 @@ import { ShoppingCart, User } from 'lucide-react';
 
 
 export default function Navbar() {
-    const { auth, cartCount } = usePage().props;
+    const { auth, cartCount, customOrderPricing } = usePage().props;
 
     const [openOrder, setOpenOrder] = useState(false);
 
@@ -133,21 +133,15 @@ export default function Navbar() {
 
                 </div>
 
-                {/* Custom Order Modal */}
-                {auth.user && (
-                    <CustomOrderModal
-                        isOpen={openOrder}
-                        onClose={() => setOpenOrder(false)}
-                        auth={auth}
-                    />
-                )}
             </header>
 
+            {/* Custom Order Modal */}
             {auth.user && (
                 <CustomOrderModal
                     isOpen={openOrder}
                     onClose={() => setOpenOrder(false)}
                     auth={auth}
+                    pricing={customOrderPricing}
                 />
             )}
 

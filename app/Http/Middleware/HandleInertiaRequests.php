@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\CartItem;
+use App\Models\CustomOrderPricing;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -45,6 +46,18 @@ class HandleInertiaRequests extends Middleware
             $cartCount = CartItem::where('user_id', $request->user()->id)->sum('quantity');
         }
 
+        // Get custom order pricing
+        $customOrderPricing = null;
+        try {
+            $customOrderPricing = CustomOrderPricing::getAllPricing();
+        } catch (\Exception $e) {
+            // Table might not exist yet
+            $customOrderPricing = [
+                'base' => ['child' => 5000, 'adult' => 8000],
+                'fabric' => ['Cotton' => 2000, 'Polyester' => 1500, 'Dry-fit' => 3000],
+            ];
+        }
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -59,6 +72,7 @@ class HandleInertiaRequests extends Middleware
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
             ],
+            'customOrderPricing' => $customOrderPricing,
         ];
     }
 }

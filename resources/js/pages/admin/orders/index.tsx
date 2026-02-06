@@ -71,12 +71,12 @@ export default function POSOrdersIndex({ orders, userRole }: Props) {
     };
 
     const paymentStatusConfig = {
-        unpaid: { color: 'bg-gray-100 text-gray-700 border-gray-200', icon: Clock },
         pending: { color: 'bg-yellow-50 text-yellow-700 border-yellow-200', icon: Clock },
         paid: { color: 'bg-green-50 text-green-700 border-green-200', icon: CheckCircle },
+        failed: { color: 'bg-red-50 text-red-700 border-red-200', icon: XCircle },
     };
     const paymentStatusLabel: Record<string, string> = {
-        unpaid: 'Unpaid', pending: 'Submitted', paid: 'Verified', failed: 'Rejected', refunded: 'Refunded',
+         pending: 'Pending', paid: 'Paid', failed: 'Failed',
     };
 
     // Filter orders
@@ -175,9 +175,7 @@ export default function POSOrdersIndex({ orders, userRole }: Props) {
                     >
                         <option value="all">All Status</option>
                         <option value="pending">Pending</option>
-                        <option value="confirmed">Confirmed</option>
                         <option value="processing">Processing</option>
-                        <option value="shipped">Shipped</option>
                         <option value="delivered">Delivered</option>
                         <option value="cancelled">Cancelled</option>
                     </select>
@@ -242,8 +240,8 @@ export default function POSOrdersIndex({ orders, userRole }: Props) {
                                 {/* Payment Status (order-level) */}
                                 <div className="mb-3 flex items-center gap-2">
                                     <CreditCard className="h-4 w-4 text-gray-400" />
-                                    <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${paymentStatusConfig[order.payment_status as keyof typeof paymentStatusConfig]?.color ?? paymentStatusConfig.unpaid.color}`}>
-                                        Payment: {paymentStatusLabel[order.payment_status ?? 'unpaid'] ?? 'Unpaid'}
+                                    <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${paymentStatusConfig[order.payment_status as keyof typeof paymentStatusConfig]?.color ?? paymentStatusConfig.pending.color}`}>
+                                        Payment: {paymentStatusLabel[order.payment_status ?? 'pending'] ?? 'Pending'}
                                     </span>
                                 </div>
 

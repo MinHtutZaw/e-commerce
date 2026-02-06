@@ -75,7 +75,7 @@ class ProductController extends Controller
                 'image' => $product->image ?? '/img/slider-1.png',
                 'gender' => $product->gender,
                 'uniform_type' => $product->uniform_type,
-                'min_order_quantity' => $product->min_order_quantity,
+             
                 'sizes' => $sizes->map(function ($size) {
                     return [
                         'id' => $size->id,
@@ -131,7 +131,7 @@ class ProductController extends Controller
                 'image' => $product->image ?? '/img/slider-1.png',
                 'gender' => $product->gender,
                 'uniform_type' => $product->uniform_type,
-                'min_order_quantity' => $product->min_order_quantity,
+        
                 'is_active' => $product->is_active,
                 'sizes' => $product->sizes->map(function ($size) {
                     return [

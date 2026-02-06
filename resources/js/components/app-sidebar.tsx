@@ -5,7 +5,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, BriefcaseIcon, Folder, LayoutDashboard, Library, Package, Users, ClipboardList } from 'lucide-react';
+import { BookOpen, BriefcaseIcon, Folder, LayoutDashboard, Library, Package, Users, ClipboardList, DollarSign } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -33,6 +33,11 @@ const mainNavItems: NavItem[] = [
         title: 'Custom Orders',
         href: '/admin/custom-orders',
         icon: ClipboardList,
+    },
+    {
+        title: 'Pricing',
+        href: '/admin/pricing',
+        icon: DollarSign,
     },
 ];
 

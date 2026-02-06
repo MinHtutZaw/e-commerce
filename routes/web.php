@@ -54,15 +54,20 @@ Route::get('/about', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
         $user = Auth::user();
-        // Get stats based on role
         $stats = [];
+        
+        $productSales = [];
+        $recentOrders = [];
+        
         if ($user->role === 'admin') {
             $orderRevenue = \App\Models\Order::where('payment_status', 'paid')->sum('total_amount');
-            // Include confirmed, processing, and completed custom orders in revenue
             $customOrderRevenue = \App\Models\CustomOrder::whereIn('status', ['confirmed', 'processing', 'completed'])->sum('total_price');
+            
             $stats = [
                 'totalOrders' => \App\Models\Order::count(),
                 'pendingOrders' => \App\Models\Order::where('status', 'pending')->count(),
+                'processingOrders' => \App\Models\Order::where('status', 'processing')->count(),
+                'deliveredOrders' => \App\Models\Order::where('status', 'delivered')->count(),
                 'totalUsers' => \App\Models\User::where('role', 'customer')->count(),
                 'totalProducts' => \App\Models\Product::count(),
                 'pendingPayments' => \App\Models\Payment::where('status', 'pending')->count(),
@@ -70,6 +75,42 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'totalCustomOrders' => \App\Models\CustomOrder::count(),
                 'pendingCustomOrders' => \App\Models\CustomOrder::where('status', 'pending')->count(),
             ];
+            
+            // Daily revenue for last 90 days
+            $chartData = \App\Models\Order::where('payment_status', 'paid')
+                ->where('created_at', '>=', now()->subDays(90))
+                ->selectRaw('DATE(created_at) as date, SUM(total_amount) as revenue')
+                ->groupBy('date')
+                ->orderBy('date')
+                ->get()
+                ->map(fn($item) => [
+                    'date' => $item->date,
+                    'revenue' => (int) $item->revenue,
+                ]);
+            
+            // Product sales (top selling products)
+            $productSales = \App\Models\OrderItem::join('products', 'order_items.product_id', '=', 'products.id')
+                ->join('orders', 'order_items.order_id', '=', 'orders.id')
+                ->where('orders.payment_status', 'paid')
+                ->selectRaw('products.name as product, SUM(order_items.quantity) as quantity, SUM(order_items.total_price) as total_amount')
+                ->groupBy('products.id', 'products.name')
+                ->orderByDesc('total_amount')
+                ->limit(6)
+                ->get();
+            
+            // Recent orders
+            $recentOrders = \App\Models\Order::with('user')
+                ->latest()
+                ->limit(5)
+                ->get()
+                ->map(fn($order) => [
+                    'id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'customer' => $order->user?->name ?? 'Guest',
+                    'total' => $order->total_amount,
+                    'status' => $order->status,
+                    'date' => $order->created_at->format('M d, Y'),
+                ]);
         } else {
             $stats = [
                 'totalOrders' => \App\Models\Order::where('user_id', $user->id)->count(),
@@ -81,12 +122,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('admin/dashboard', [
             'userRole' => $user->role,
             'stats' => $stats,
+            'chartData' => $chartData,
+            'productSales' => $productSales,
+            'recentOrders' => $recentOrders,
         ]);
     })->name('dashboard');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    // POS Style Orders for all authenticated users
+
+    
     Route::get('/customer/orders', [OrderController::class, 'posIndex'])->name('customer.orders.index');
     
     // Admin order management
@@ -117,6 +162,12 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(functio
     Route::get('/custom-orders/{id}', [CustomOrderController::class, 'show'])->name('admin.custom-orders.show');
     Route::put('/custom-orders/{id}/status', [CustomOrderController::class, 'updateStatus'])->name('admin.custom-orders.update-status');
     Route::put('/custom-orders/{id}/quote', [CustomOrderController::class, 'updateQuote'])->name('admin.custom-orders.update-quote');
+    
+    // Pricing Management
+    Route::get('/pricing', [\App\Http\Controllers\Admin\PricingController::class, 'index'])->name('admin.pricing.index');
+    Route::post('/pricing', [\App\Http\Controllers\Admin\PricingController::class, 'store'])->name('admin.pricing.store');
+    Route::put('/pricing/{id}', [\App\Http\Controllers\Admin\PricingController::class, 'update'])->name('admin.pricing.update');
+    Route::delete('/pricing/{id}', [\App\Http\Controllers\Admin\PricingController::class, 'destroy'])->name('admin.pricing.destroy');
 });
 
 require __DIR__.'/settings.php';

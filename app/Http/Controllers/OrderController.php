@@ -142,33 +142,78 @@ class OrderController extends Controller
             'status' => 'required|in:pending,confirmed,processing,shipped,delivered,cancelled',
         ]);
 
-        $order = Order::findOrFail($id);
+        $order = Order::with('items.productSize')->findOrFail($id);
         $this->validateOrderStatusChange($order, $request->status);
+
+        // Reduce stock when status changes to "processing"
+        if ($request->status === 'processing' && $order->status !== 'processing') {
+            DB::transaction(function () use ($order) {
+                foreach ($order->items as $item) {
+                    if ($item->productSize) {
+                        $newStock = max(0, $item->productSize->stock_quantity - $item->quantity);
+                        $item->productSize->update([
+                            'stock_quantity' => $newStock,
+                            'is_available' => $newStock > 0,
+                        ]);
+                    }
+                }
+            });
+        }
+
+        // Restore stock when order is cancelled (if it was already processing or beyond)
+        if ($request->status === 'cancelled' && in_array($order->status, ['processing', 'shipped', 'delivered'])) {
+            DB::transaction(function () use ($order) {
+                foreach ($order->items as $item) {
+                    if ($item->productSize) {
+                        $item->productSize->increment('stock_quantity', $item->quantity);
+                        $item->productSize->update(['is_available' => true]);
+                    }
+                }
+            });
+        }
 
         $order->update(['status' => $request->status]);
 
         return back()->with('success', 'Order status updated successfully.');
     }
 
-    // Update payment status
     public function updatePaymentStatus(Request $request, $paymentId)
     {
         $this->authorizeAdmin();
-
-        $request->validate(['status' => 'required|in:paid,failed']);
-
+    
+        // Allow paid, failed, or pending (for reset)
+        $request->validate(['status' => 'required|in:paid,failed,pending']);
+    
         $payment = Payment::findOrFail($paymentId);
+    
+        // Resetting paid or failed payment back to pending
+        if (($payment->status === 'paid' || $payment->status === 'failed') && $request->status === 'pending') {
+            $payment->update(['status' => 'pending']);
+            // Reset order payment and order status
+            $payment->order->update([
+                'payment_status' => 'pending',
+                'status' => 'pending',  // <-- reset order status as well
+            ]);
+            return back()->with('success', 'Payment and order status have been reset to pending.');
+        }
+    
+        // Only allow updating pending payments to paid or failed
         if ($payment->status !== 'pending') {
             return back()->withErrors(['error' => 'This payment has already been verified or rejected.']);
         }
-
+    
         $payment->update(['status' => $request->status]);
+    
+        // Update order payment status based on payment
         $payment->order->update(['payment_status' => $request->status === 'paid' ? 'paid' : 'failed']);
-
+    
         return back()->with('success', $request->status === 'paid'
             ? 'Payment verified. You can now confirm the order.'
             : 'Payment rejected.');
     }
+    
+ 
+
 
     // ------------------ Helper Methods ------------------
 

@@ -34,7 +34,6 @@ interface Product {
     slug: string;
     category_id: number;
     description: string | null;
-    min_order_quantity: number;
     gender: string | null;
     uniform_type: string | null;
     image: string | null;
@@ -59,12 +58,13 @@ export default function Edit() {
     const { product, categories, errors } = usePage<PageProps>().props;
     const [processing, setProcessing] = useState(false);
     const [imagePreview, setImagePreview] = useState<string | null>(product.image || null);
+
     const [form, setForm] = useState({
         name: product.name || '',
         slug: product.slug || '',
         category_id: String(product.category_id) || '',
         description: product.description || '',
-        min_order_quantity: product.min_order_quantity || 1,
+
         gender: product.gender || '',
         uniform_type: product.uniform_type || '',
         image: null as File | null,
@@ -78,11 +78,45 @@ export default function Edit() {
         })) as ProductSize[],
     });
 
+    const [initialForm] = useState(() =>
+        JSON.stringify({
+            name: product.name || '',
+            slug: product.slug || '',
+            category_id: String(product.category_id) || '',
+            description: product.description || '',
+            gender: product.gender || '',
+            uniform_type: product.uniform_type || '',
+            is_active: product.is_active ?? true,
+            sizes: product.sizes.map(size => ({
+                id: size.id,
+                size: size.size,
+                price: String(size.price),
+                stock_quantity: String(size.stock_quantity),
+                is_available: size.is_available,
+            })),
+        })
+    );
+    const isChanged =
+        JSON.stringify({
+            name: form.name,
+            slug: form.slug,
+            category_id: form.category_id,
+            description: form.description,
+            gender: form.gender,
+            uniform_type: form.uniform_type,
+            is_active: form.is_active,
+            sizes: form.sizes,
+        }) !== initialForm || !!form.image;
+
+
+
+
+
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             setForm({ ...form, image: file });
-            
+
             // Create preview
             const reader = new FileReader();
             reader.onloadend = () => {
@@ -124,7 +158,7 @@ export default function Edit() {
         formData.append('name', form.name);
         formData.append('category_id', form.category_id);
         formData.append('description', form.description);
-        formData.append('min_order_quantity', String(form.min_order_quantity));
+
         formData.append('gender', form.gender);
         formData.append('uniform_type', form.uniform_type);
         if (form.image) formData.append('image', form.image);
@@ -253,18 +287,7 @@ export default function Edit() {
                                 </Select>
                             </div>
 
-                            {/* Min Order Quantity */}
-                            <div className="space-y-2">
-                                <Label htmlFor="min_order" className="text-gray-700 dark:text-gray-300">Min Order Quantity</Label>
-                                <Input
-                                    id="min_order"
-                                    type="number"
-                                    value={form.min_order_quantity}
-                                    onChange={(e) => setForm({ ...form, min_order_quantity: parseInt(e.target.value) || 1 })}
-                                    placeholder="Minimum order quantity"
-                                    required
-                                />
-                            </div>
+
                         </div>
 
                         {/* Product Sizes Section */}
@@ -354,6 +377,7 @@ export default function Edit() {
                                 }
                                 placeholder="Enter product description"
                                 rows={4}
+                                
                             />
                         </div>
 
@@ -400,7 +424,12 @@ export default function Edit() {
                                 )}
                             </div>
                         </div>
-
+                            
+                        {!isChanged && !processing && (
+                            <p className="text-sm text-red-500 text-center">
+                                Make a change to enable update
+                            </p>
+                        )}
                         {/* Submit Button */}
                         <div className="flex gap-3">
                             <Button
@@ -413,8 +442,8 @@ export default function Edit() {
                             </Button>
                             <Button
                                 type="submit"
-                                disabled={processing}
-                                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                                disabled={processing || !isChanged}
+                                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {processing ? (
                                     <span className="flex items-center justify-center gap-2">
@@ -425,7 +454,9 @@ export default function Edit() {
                                     'Update Product'
                                 )}
                             </Button>
+
                         </div>
+                        
                     </form>
                 </div>
             </div>

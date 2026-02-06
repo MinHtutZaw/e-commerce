@@ -2,20 +2,16 @@ import { useState } from 'react'
 import { useForm } from '@inertiajs/react'
 import { toast } from 'sonner'
 
-const BASE_PRICE = {
-    child: 5000,
-    adult: 8000,
-}
 
-const FABRIC_PRICE = {
-    Cotton: 2000,
-    Polyester: 1500,
-    'Dry-fit': 3000,
-}
 
-export default function CustomOrderModal({ isOpen, onClose, auth }) {
+export default function CustomOrderModal({ isOpen, onClose, auth, pricing }) {
     const [step, setStep] = useState(1)
     const TOTAL_STEPS = 3
+    const [errors, setErrors] = useState({})
+
+    // Use pricing from props or fallback to defaults
+    const BASE_PRICE = pricing?.base || []
+    const FABRIC_PRICE = pricing?.fabric || []
 
     const { data, setData, post, processing, reset } = useForm({
         customer_type: '',
@@ -31,32 +27,70 @@ export default function CustomOrderModal({ isOpen, onClose, auth }) {
     if (!isOpen) return null
 
     /* ------------------ PRICE CALCULATION ------------------ */
-    const basePrice = data.customer_type ? BASE_PRICE[data.customer_type] : 0
-    const fabricPrice = data.fabric_type ? FABRIC_PRICE[data.fabric_type] : 0
+    const basePrice = data.customer_type ? (BASE_PRICE[data.customer_type] || 0) : 0
+    const fabricPrice = data.fabric_type ? (FABRIC_PRICE[data.fabric_type] || 0) : 0
     const unitPrice = basePrice + fabricPrice
     const totalPrice = unitPrice * (Number(data.quantity) || 0)
 
+    const validateStep2 = () => {
+        const newErrors = {}
+    
+        if (!data.customer_type) {
+            newErrors.customer_type = 'Customer type is required'
+        }
+    
+        if (!data.fabric_type) {
+            newErrors.fabric_type = 'Fabric type is required'
+        }
+    
+        if (!data.quantity || Number(data.quantity) < 1) {
+            newErrors.quantity = 'Quantity must be at least 1'
+        }
+    
+        if (data.waist && Number(data.waist) < 0) {
+            newErrors.waist = 'Waist must be a positive number'
+        }
+    
+        if (data.hip && Number(data.hip) < 0) {
+            newErrors.hip = 'Hip must be a positive number'
+        }
+    
+        if (data.height && Number(data.height) < 0) {
+            newErrors.height = 'Height must be a positive number'
+        }
+    
+        setErrors(newErrors)
+    
+        return Object.keys(newErrors).length === 0
+    }
+    
     /* ------------------ NAVIGATION ------------------ */
-    const nextStep = () => setStep(s => Math.min(s + 1, TOTAL_STEPS))
+    const nextStep = () => {
+        if (step === 2 && !validateStep2()) return
+        setStep(s => Math.min(s + 1, TOTAL_STEPS))
+    }
+
     const prevStep = () => setStep(s => Math.max(s - 1, 1))
 
     /* ------------------ SUBMIT ------------------ */
     const handleSubmit = (e) => {
         if (e) e.preventDefault()
-            post('/custom-orders', {
-                onSuccess: () => {
-                  toast.success('Custom order submitted successfully!')
-                  reset()
-                  setStep(1)
-                  onClose()
-                },
-                onError: (errors) => {
-                  toast.error(Object.values(errors).flat().join(', '))
-                }
-              })
-              
 
+        if (!validateStep2()) return
+
+        post('/custom-orders', {
+            onSuccess: () => {
+                toast.success('Custom order submitted successfully!')
+                reset()
+                setStep(1)
+                onClose()
+            },
+            onError: (errors) => {
+                toast.error(Object.values(errors).flat().join(', '))
+            }
+        })
     }
+
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -102,41 +136,76 @@ export default function CustomOrderModal({ isOpen, onClose, auth }) {
                                 <Select
                                     label="Customer Type"
                                     value={data.customer_type}
-                                    onChange={e => setData('customer_type', e.target.value)}
-                                    options={['child', 'adult']}
+                                    onChange={e => {
+                                        setData('customer_type', e.target.value)
+                                        setErrors(prev => ({ ...prev, customer_type: null }))
+                                    }}
+                                    error={errors.customer_type}
+                                    options={Object.keys(BASE_PRICE)}
+                                    required
                                 />
                                 <Select
                                     label="Fabric"
                                     value={data.fabric_type}
-                                    onChange={e => setData('fabric_type', e.target.value)}
+                                    onChange={e => {
+                                        setData('fabric_type', e.target.value)
+                                        setErrors(prev => ({ ...prev, fabric_type: null }))
+                                    }}
+                                    error={errors.fabric_type}
                                     options={Object.keys(FABRIC_PRICE)}
+                                    required
                                 />
                                 <Input
                                     label="Uniform Type"
                                     value={data.uniform_type}
-                                    onChange={e => setData('uniform_type', e.target.value)}
+                                    onChange={e => {
+                                        setData('uniform_type', e.target.value)
+                                        setErrors(prev => ({ ...prev, uniform_type: null }))
+                                    }}
+                                    error={errors.uniform_type}
+                                    required
                                 />
                                 <Input
                                     label="Waist (cm)"
                                     value={data.waist}
-                                    onChange={e => setData('waist', e.target.value)}
+                                    onChange={e => {
+                                        setData('waist', e.target.value)
+                                        setErrors(prev => ({ ...prev, waist: null }))
+                                    }}
+                                    error={errors.waist}
+                                    required
                                 />
                                 <Input
                                     label="Hip (cm)"
                                     value={data.hip}
-                                    onChange={e => setData('hip', e.target.value)}
+                                    onChange={e => {
+                                        setData('hip', e.target.value)
+                                        setErrors(prev => ({ ...prev, hip: null }))
+                                    }}
+                                    error={errors.hip}
+                                    required
                                 />
                                 <Input
                                     label="Height (cm)"
                                     value={data.height}
-                                    onChange={e => setData('height', e.target.value)}
+                                    onChange={e => {
+                                        setData('height', e.target.value)
+                                        setErrors(prev => ({ ...prev, height: null }))
+                                    }}
+                                    error={errors.height}
+                                    required
                                 />
                                 <Input
                                     label="Quantity"
                                     type="number"
                                     min="1"
                                     value={data.quantity}
-                                    onChange={e => setData('quantity', e.target.value)}
+                                    onChange={e => {
+                                        setData('quantity', e.target.value)
+                                        setErrors(prev => ({ ...prev, quantity: null }))
+                                    }}
+                                    error={errors.quantity}
+                                    required
 
                                 />
 
@@ -207,7 +276,8 @@ export default function CustomOrderModal({ isOpen, onClose, auth }) {
                         <button
                             type="button"
                             onClick={nextStep}
-                            className="px-4 py-2 bg-emerald-600 text-white rounded-md"
+                            disabled={step === 2 && (!data.customer_type || !data.fabric_type)}
+                            className="px-4 py-2 bg-emerald-600 text-white rounded-md disabled:opacity-50"
                         >
                             Next
                         </button>
@@ -215,8 +285,10 @@ export default function CustomOrderModal({ isOpen, onClose, auth }) {
                         <button
                             type="button"
                             onClick={handleSubmit}
-                            disabled={processing}
-                            className="px-4 py-2 bg-emerald-600 text-white rounded-md"
+                           
+                            className={`px-4 py-2 bg-emerald-600 text-white rounded-md
+                                ${processing ? 'opacity-50 cursor-not-allowed' : ''}
+                            `}
                         >
                             {processing ? 'Submitting...' : 'Confirm Order'}
                         </button>
@@ -236,17 +308,33 @@ const Info = ({ label, value }) => (
     </div>
 )
 
-const Input = ({ label, ...props }) => (
+const Input = ({ label, error, ...props }) => (
     <div>
         <label className="text-sm text-gray-600">{label}</label>
-        <input {...props} className="w-full mt-1 border rounded-md px-3 py-2" />
+
+        <input
+            {...props}
+            className={`w-full mt-1 rounded-md px-3 py-2 border
+                ${error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'}
+            `}
+        />
+
+        {error && (
+            <p className="mt-1 text-xs text-red-500">{error}</p>
+        )}
     </div>
 )
 
-const Select = ({ label, options, ...props }) => (
+const Select = ({ label, options, error, ...props }) => (
     <div>
         <label className="text-sm text-gray-600">{label}</label>
-        <select {...props} className="w-full mt-1 border rounded-md px-3 py-2">
+
+        <select
+            {...props}
+            className={`w-full mt-1 rounded-md px-3 py-2 border
+                ${error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'}
+            `}
+        >
             <option value="">Select</option>
             {options.map(o => (
                 <option key={o} value={o}>
@@ -254,6 +342,10 @@ const Select = ({ label, options, ...props }) => (
                 </option>
             ))}
         </select>
+
+        {error && (
+            <p className="mt-1 text-xs text-red-500">{error}</p>
+        )}
     </div>
 )
 
