@@ -11,7 +11,8 @@ interface AuthLayoutProps {
 
 export default function AuthSimpleLayout({ children, title, description }: PropsWithChildren<AuthLayoutProps>) {
     return (
-        <div className="flex flex-col items-center  justify-center gap-6 bg-gradient-to-br from-emerald-700 via-teal-700 to-emerald-800  text-white p-6 md:p-10">
+        <div className="min-h-screen w-full flex flex-col items-center justify-center gap-6 bg-gradient-to-br from-emerald-700 via-teal-700 to-emerald-800 text-white p-6 md:p-10">
+
             <div className="w-full max-w-sm">
                 <div className="flex flex-col gap-8">
                     <div className="flex flex-col items-center gap-4">

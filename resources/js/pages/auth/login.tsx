@@ -1,5 +1,5 @@
 import AuthenticatedSessionController from '@/actions/App/Http/Controllers/Auth/AuthenticatedSessionController';
-import { home, register } from '@/routes';
+import {  register } from '@/routes';
 import { Form, Head, Link, usePage } from '@inertiajs/react';
 import { LoaderCircle, LogIn } from 'lucide-react';
 
@@ -22,9 +22,7 @@ interface LoginProps {
     };
 }
 
-export default function Login({ canResetPassword }: LoginProps) {
-    const { flash } = usePage<LoginProps>().props;
-
+export default function Login({ canResetPassword, flash }: LoginProps) {
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
         if (flash?.error) toast.error(flash.error);
@@ -60,7 +58,7 @@ export default function Login({ canResetPassword }: LoginProps) {
                     <div className="mx-auto w-full max-w-sm lg:max-w-md">
                         {/* Mobile logo */}
                         <div className="mb-8 flex justify-center lg:hidden">
-                            <Link href={home()} className="inline-flex items-center gap-2">
+                            <Link href={"/"} className="inline-flex items-center gap-2">
                                 <AppLogoIcon className="size-10" />
                                 <span className="font-semibold">EduFit</span>
                             </Link>
@@ -101,7 +99,7 @@ export default function Login({ canResetPassword }: LoginProps) {
                                             <div className="flex items-center">
                                                 <Label htmlFor="password">Password</Label>
                                                 {canResetPassword && (
-                                                    <TextLink href="#" className="ml-auto text-sm">
+                                                    <TextLink href="/forgot-password" className="ml-auto text-sm">
                                                         Forgot password?
                                                     </TextLink>
                                                 )}

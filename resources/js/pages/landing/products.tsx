@@ -191,7 +191,7 @@ export default function Products({ products: initialProducts, categories, filter
                                             e.stopPropagation();
                                             router.visit(`/products/${product.slug}`);
                                         }}
-                                        className="mt-4 w-full rounded-md py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 transition"
+                                        className="mt-4 w-full rounded-md py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 transition"
                                     >
                                         View Details
                                     </button>

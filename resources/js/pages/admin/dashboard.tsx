@@ -5,7 +5,7 @@ import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
-import { Package, Users, ShoppingBag, Clock, DollarSign, TrendingUp, CheckCircle, Truck } from 'lucide-react';
+import { Package, Users, ShoppingBag, Clock, DollarSign, TrendingUp, CheckCircle, Truck, Scissors } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Area, AreaChart, CartesianGrid, XAxis, ResponsiveContainer, YAxis } from 'recharts';
@@ -60,6 +60,7 @@ interface RecentOrder {
     total: number;
     status: string;
     date: string;
+    type?: 'order' | 'custom';
 }
 
 interface Props {
@@ -76,10 +77,14 @@ interface Props {
         totalSpent?: number;
         totalCustomOrders?: number;
         pendingCustomOrders?: number;
+        processingCustomOrders?: number;
+        completedCustomOrders?: number;
+        customOrderRevenue?: number;
     };
     chartData?: ChartDataItem[];
     productSales?: ProductSalesItem[];
     recentOrders?: RecentOrder[];
+    recentCustomOrders?: RecentOrder[];
     flash?: {
         success?: string;
         error?: string;
@@ -87,7 +92,7 @@ interface Props {
     [key: string]: any;
 }
 
-export default function Dashboard({ userRole, stats, chartData = [], productSales = [], recentOrders = [] }: Props) {
+export default function Dashboard({ userRole, stats, chartData = [], productSales = [], recentOrders = [], recentCustomOrders = [] }: Props) {
     const { flash } = usePage<Props>().props;
     const [timeRange, setTimeRange] = useState('90d');
 
@@ -191,38 +196,91 @@ export default function Dashboard({ userRole, stats, chartData = [], productSale
                         </Card>
                     </div>
 
-                    {/* Order Status Cards */}
-                    <div className="grid gap-4 md:grid-cols-3">
-                        <Card className="border-l-4 border-l-yellow-500">
-                            <CardContent className="flex items-center justify-between p-4">
-                                <div>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">Pending</p>
-                                    <p className="text-2xl font-bold text-yellow-600">{stats.pendingOrders || 0}</p>
-                                </div>
-                                <Clock className="h-8 w-8 text-yellow-500" />
-                            </CardContent>
-                        </Card>
 
-                        <Card className="border-l-4 border-l-purple-500">
-                            <CardContent className="flex items-center justify-between p-4">
-                                <div>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">Processing</p>
-                                    <p className="text-2xl font-bold text-purple-600">{stats.processingOrders || 0}</p>
-                                </div>
-                                <Truck className="h-8 w-8 text-purple-500" />
-                            </CardContent>
-                        </Card>
+                  
+                    {/* Order Status Section */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">Order Status Overview</CardTitle>
+                            <CardDescription>Current status of all orders</CardDescription>
+                        </CardHeader>
 
-                        <Card className="border-l-4 border-l-green-500">
-                            <CardContent className="flex items-center justify-between p-4">
-                                <div>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">Delivered</p>
-                                    <p className="text-2xl font-bold text-green-600">{stats.deliveredOrders || 0}</p>
+                        <CardContent>
+                            <div className="grid gap-4 md:grid-cols-3">
+                                <Card className="border border-gray-200 dark:border-gray-800">
+                                    <CardContent className="p-4">
+                                        <p className="text-sm text-gray-500">Pending Orders</p>
+                                        <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                            {stats.pendingOrders || 0}
+                                        </p>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className="border border-gray-200 dark:border-gray-800">
+                                    <CardContent className="p-4">
+                                        <p className="text-sm text-gray-500">Processing Orders</p>
+                                        <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                            {stats.processingOrders || 0}
+                                        </p>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className="border border-gray-200 dark:border-gray-800">
+                                    <CardContent className="p-4">
+                                        <p className="text-sm text-gray-500">Delivered Orders</p>
+                                        <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                            {stats.deliveredOrders || 0}
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+
+
+                    {/* Custom Orders Section */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Scissors className="h-5 w-5 text-pink-600" />
+                                Custom Orders Overview
+                            </CardTitle>
+                            <CardDescription>Uniform customization orders from customers</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                                <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+                                    <p className="text-sm text-gray-500">Total Custom Orders</p>
+                                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                        {stats.totalCustomOrders || 0}
+                                    </p>
                                 </div>
-                                <CheckCircle className="h-8 w-8 text-green-500" />
-                            </CardContent>
-                        </Card>
-                    </div>
+
+                                <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+                                    <p className="text-sm text-gray-500">Pending</p>
+                                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                        {stats.pendingCustomOrders || 0}
+                                    </p>
+                                </div>
+
+                                <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+                                    <p className="text-sm text-gray-500">Processing</p>
+                                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                        {stats.processingCustomOrders || 0}
+                                    </p>
+                                </div>
+
+                                <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+                                    <p className="text-sm text-gray-500">Revenue</p>
+                                    <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                                        {(stats.customOrderRevenue || 0).toLocaleString()} MMK
+                                    </p>
+                                </div>
+                            </div>
+
+                        </CardContent>
+                    </Card>
 
                     {/* Revenue Chart */}
                     <Card>
@@ -324,7 +382,7 @@ export default function Dashboard({ userRole, stats, chartData = [], productSale
                                                 <div className="flex items-center gap-2">
                                                     <span
                                                         className="h-3 w-3 rounded-sm"
-                                                        style={{ backgroundColor: product.fill }}
+
                                                     />
                                                     <span className="font-medium text-sm truncate max-w-[120px]">{product.product}</span>
                                                 </div>
@@ -342,8 +400,11 @@ export default function Dashboard({ userRole, stats, chartData = [], productSale
                         {/* Recent Orders */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>Recent Orders</CardTitle>
-                                <CardDescription>Latest orders from your store</CardDescription>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Package className="h-5 w-5 text-blue-600" />
+                                    Recent Orders
+                                </CardTitle>
+                                <CardDescription>Latest product orders from your store</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 {recentOrders.length > 0 ? (
@@ -378,6 +439,46 @@ export default function Dashboard({ userRole, stats, chartData = [], productSale
                         </Card>
                     </div>
 
+                    {/* Recent Custom Orders */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Scissors className="h-5 w-5 text-pink-600" />
+                                Recent Custom Orders
+                            </CardTitle>
+                            <CardDescription>Latest custom uniform orders</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {recentCustomOrders.length > 0 ? (
+                                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                    {recentCustomOrders.map((order) => (
+                                        <div
+                                            key={order.id}
+                                            className="flex items-center justify-between rounded-lg border border-pink-200 bg-pink-50/50 p-3 hover:bg-pink-100 dark:border-pink-800 dark:bg-pink-950/30 dark:hover:bg-pink-950/50"
+                                        >
+                                            <div className="flex-1">
+                                                <p className="font-medium text-pink-900 dark:text-pink-100">{order.order_number}</p>
+                                                <p className="text-sm text-pink-600 dark:text-pink-400">{order.customer}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="font-semibold text-pink-800 dark:text-pink-200">{order.total.toLocaleString()} MMK</p>
+                                                <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${getStatusColor(order.status)}`}>
+                                                    {order.status}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="flex h-[100px] items-center justify-center text-gray-500">
+                                    <div className="text-center">
+                                        <Scissors className="mx-auto h-10 w-10 text-gray-300" />
+                                        <p className="mt-2 text-sm">No custom orders yet</p>
+                                    </div>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
 
                 </div>
             </AppLayout>
@@ -394,7 +495,7 @@ export default function Dashboard({ userRole, stats, chartData = [], productSale
                     <p className="text-gray-600 dark:text-gray-400">Welcome back! Here's your order summary.</p>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-gray-600">My Orders</CardTitle>
@@ -403,6 +504,17 @@ export default function Dashboard({ userRole, stats, chartData = [], productSale
                         <CardContent>
                             <div className="text-2xl font-bold">{stats.totalOrders || 0}</div>
                             <p className="text-xs text-gray-500">{stats.pendingOrders || 0} pending</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-sm font-medium text-gray-600">Custom Orders</CardTitle>
+                            <Scissors className="h-4 w-4 text-pink-600" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-pink-600">{stats.totalCustomOrders || 0}</div>
+                            <p className="text-xs text-gray-500">Uniform customizations</p>
                         </CardContent>
                     </Card>
 

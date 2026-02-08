@@ -13,8 +13,6 @@ class Category extends Model
         'name',
         'slug',
         'description',
-        'image',
-        'gender',
         'sort_order',
         'is_active',
     ];

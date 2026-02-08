@@ -96,7 +96,7 @@ export default function CustomerProfile({ user, recentOrders, stats, flash }: Pr
                                             {item.label}
                                         </button>
                                     ))}
-                                    
+
                                     {/* Custom Orders Link */}
                                     <button
                                         onClick={() => router.visit('/my-custom-orders')}
@@ -156,10 +156,22 @@ export default function CustomerProfile({ user, recentOrders, stats, flash }: Pr
                                                 <div key={field}>
                                                     <Label className="text-gray-700 capitalize">{field}</Label>
                                                     <Input
+                                                        type={field === 'phone' ? 'tel' : 'text'}
+                                                        inputMode={field === 'phone' ? 'numeric' : undefined}
+                                                        placeholder={field === 'phone' ? '09xxxxxxxx' : undefined}
                                                         value={(profileData as Record<string, string>)[field] ?? ''}
-                                                        onChange={(e) => setProfileData(field as 'name' | 'email' | 'phone' | 'address', e.target.value)}
+                                                        onChange={(e) => {
+                                                            if (field === 'phone') {
+                                                                // numbers only
+                                                                const onlyNumbers = e.target.value.replace(/\D/g, '');
+                                                                setProfileData('phone', onlyNumbers);
+                                                            } else {
+                                                                setProfileData(field as 'name' | 'email' | 'address', e.target.value);
+                                                            }
+                                                        }}
                                                         className="mt-2"
                                                     />
+
                                                     {(profileErrors as any)[field] && (
                                                         <p className="text-red-500 text-sm mt-1">
                                                             {(profileErrors as any)[field]}
@@ -176,18 +188,18 @@ export default function CustomerProfile({ user, recentOrders, stats, flash }: Pr
                                             </Button>
                                         </form>
 
-                                      
+
                                     </div>
                                 )}
 
                                 {/* ORDERS */}
                                 {activeSection === 'orders' && (
                                     <div className="space-y-6">
-                                        
+
                                         <h1 className="text-3xl font-bold">My Orders</h1>
 
-                                          {/* Stats */}
-                                          <div className="grid md:grid-cols-3 gap-4 pt-6 border-t">
+                                        {/* Stats */}
+                                        <div className="grid md:grid-cols-3 gap-4 pt-6 border-t">
                                             <StatCard label="Total Orders" value={stats.totalOrders} />
                                             <StatCard label="Pending Orders" value={stats.pendingOrders} />
                                             <StatCard label="Total Spent" value={`${stats.totalSpent.toLocaleString()} MMK`} />
@@ -204,7 +216,7 @@ export default function CustomerProfile({ user, recentOrders, stats, flash }: Pr
                                                     <div className="flex justify-between">
                                                         <div>
                                                             <p className="font-semibold">#{order.order_number}</p>
-                                                            
+
                                                             <p className="text-sm text-gray-500">
                                                                 {new Date(order.created_at).toLocaleDateString()}
                                                             </p>
@@ -270,7 +282,7 @@ export default function CustomerProfile({ user, recentOrders, stats, flash }: Pr
                 </div>
             </div>
 
-           
+
         </>
     );
 }

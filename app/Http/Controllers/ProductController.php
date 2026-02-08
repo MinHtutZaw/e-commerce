@@ -72,7 +72,7 @@ class ProductController extends Controller
                 'category_id' => $product->category_id,
                 'description' => $product->description,
                 'price' => $minPrice, // Show minimum price
-                'image' => $product->image ?? '/img/slider-1.png',
+                'image' => $product->image ,
                 'gender' => $product->gender,
                 'uniform_type' => $product->uniform_type,
              
@@ -128,7 +128,7 @@ class ProductController extends Controller
                 'category' => $product->category->name ?? 'Uncategorized',
                 'category_id' => $product->category_id,
                 'description' => $product->description,
-                'image' => $product->image ?? '/img/slider-1.png',
+                'image' => $product->image,
                 'gender' => $product->gender,
                 'uniform_type' => $product->uniform_type,
         

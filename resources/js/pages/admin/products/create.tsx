@@ -239,18 +239,7 @@ export default function Create({ categories }: { categories: Category[] }) {
                                 </Select>
                             </div>
 
-                            {/* Min Order Quantity */}
-                            <div className="space-y-2">
-                                <Label htmlFor="min_order" className="text-gray-700 dark:text-gray-300">Min Order Quantity</Label>
-                                <Input
-                                    id="min_order"
-                                    type="number"
-                                    value={form.min_order_quantity}
-                                    onChange={(e) => setForm({ ...form, min_order_quantity: parseInt(e.target.value) || 1 })}
-                                    placeholder="Minimum order quantity"
-                                    required
-                                />
-                            </div>
+                            
                         </div>
 
                         {/* Product Sizes Section */}

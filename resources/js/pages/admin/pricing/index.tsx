@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DollarSign, Plus, Trash2, Edit2, Check, X, User, Shirt } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
     Table,
     TableBody,
@@ -62,10 +62,21 @@ interface Props {
 }
 
 export default function PricingIndex({ pricing }: Props) {
+    
+
+    //
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editPrice, setEditPrice] = useState<string>('');
     const [addDialogOpen, setAddDialogOpen] = useState(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
+    const inputRef = useRef<HTMLInputElement>(null);    
+
+    useEffect(() => {
+        if (editingId !== null && inputRef.current) {
+            inputRef.current.focus();
+            inputRef.current.select(); // optional: selects the text automatically
+        }
+    }, [editingId]);
 
     const { data, setData, post, processing, reset } = useForm({
         type: 'fabric' as 'base' | 'fabric',
@@ -80,6 +91,7 @@ export default function PricingIndex({ pricing }: Props) {
         setEditingId(item.id);
         setEditPrice(item.price.toString());
     };
+
 
     const handleSave = (id: number) => {
         router.put(`/admin/pricing/${id}`, { price: parseInt(editPrice) }, {
@@ -157,6 +169,7 @@ export default function PricingIndex({ pricing }: Props) {
                                         <Input
                                             type="number"
                                             value={editPrice}
+                                            ref={inputRef}
                                             onChange={(e) => setEditPrice(e.target.value)}
                                             className="w-32"
                                         />
@@ -165,10 +178,10 @@ export default function PricingIndex({ pricing }: Props) {
                                     )}
                                 </TableCell>
                                 <TableCell>
-                                    <Badge 
-                                        variant="outline" 
-                                        className={item.is_active 
-                                            ? 'bg-green-100 text-green-800 border-green-300' 
+                                    <Badge
+                                        variant="outline"
+                                        className={item.is_active
+                                            ? 'bg-green-100 text-green-800 border-green-300'
                                             : 'bg-gray-100 text-gray-800 border-gray-300'
                                         }
                                     >
@@ -191,8 +204,8 @@ export default function PricingIndex({ pricing }: Props) {
                                                 <Button size="sm" variant="outline" onClick={() => handleEdit(item)}>
                                                     <Edit2 className="h-4 w-4" />
                                                 </Button>
-                                                <Button 
-                                                    size="sm" 
+                                                <Button
+                                                    size="sm"
                                                     variant={item.is_active ? 'secondary' : 'default'}
                                                     onClick={() => handleToggleActive(item)}
                                                 >
@@ -282,17 +295,17 @@ export default function PricingIndex({ pricing }: Props) {
                         </div>
                         <div className="space-y-2">
                             <Label>Name</Label>
-                            <Input 
-                                value={data.name} 
+                            <Input
+                                value={data.name}
                                 onChange={(e) => setData('name', e.target.value)}
                                 placeholder={data.type === 'base' ? 'e.g., senior' : 'e.g., Silk'}
                             />
                         </div>
                         <div className="space-y-2">
                             <Label>Price (MMK)</Label>
-                            <Input 
-                                type="number" 
-                                value={data.price} 
+                            <Input
+                                type="number"
+                                value={data.price}
                                 onChange={(e) => setData('price', e.target.value)}
                                 placeholder="0"
                             />

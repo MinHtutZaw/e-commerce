@@ -77,10 +77,10 @@ export default function Index() {
     const { products, flash } = usePage<PageProps>().props;
     const list = products.data || [];
     const from = (products.current_page - 1) * products.per_page;
-    
+
     // useForm for delete
     const { processing, delete: destroy } = useForm();
-    
+
     // Drawer state
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [categoryForm, setCategoryForm] = useState({
@@ -129,7 +129,7 @@ export default function Index() {
     const handleCategoryChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setCategoryForm({ ...categoryForm, [e.target.name]: e.target.value });
     };
-    
+
 
     return (
         <AppLayout>
@@ -250,7 +250,7 @@ export default function Index() {
                             list.map((product, index) => (
                                 <TableRow key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                     <TableCell className="text-gray-500 dark:text-gray-400">
-                                        {from + index + 1}
+                                        {product.id}
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-3">
@@ -409,38 +409,46 @@ export default function Index() {
 
             {/* Pagination */}
             {products.last_page > 1 && (
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-3">
+                <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-4">
+
+                    {/* Info */}
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Showing {from + 1} to {Math.min(from + list.length, products.total)} of {products.total} products
+                        Showing <span className="font-medium">{from + 1}</span> to{" "}
+                        <span className="font-medium">
+                            {Math.min(from + list.length, products.total)}
+                        </span>{" "}
+                        of <span className="font-medium">{products.total}</span> products
                     </p>
-                    <div className="flex items-center gap-1">
-                        {products.links.map((link, i) => (
-                            <span key={i}>
-                                {link.url ? (
-                                    <a
-                                        href={link.url}
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            router.get(link.url!);
-                                        }}
-                                        className={`inline-flex items-center justify-center min-w-[2.25rem] px-2 py-1.5 text-sm rounded-md ${
-                                            link.active
-                                                ? 'bg-emerald-600 text-white font-medium'
-                                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600'
+
+                    {/* Links */}
+                    <div className="flex flex-wrap items-center gap-1">
+                        {products.links.map((link, index) => {
+                            const label = link.label
+                                .replace('&laquo;', '')
+                                .replace('&raquo;', '')
+                                .trim();
+
+                            return (
+                                <button
+                                    key={index}
+                                    disabled={!link.url}
+                                    onClick={() => link.url && router.get(link.url)}
+                                    className={`min-w-[36px] rounded-md px-3 py-1.5 text-sm transition
+                            ${link.active
+                                            ? 'bg-emerald-600 text-white font-medium'
+                                            : link.url
+                                                ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                                : 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
                                         }`}
-                                    >
-                                        {link.label.replace('&laquo; Previous', 'Prev').replace('Next &raquo;', 'Next')}
-                                    </a>
-                                ) : (
-                                    <span className="inline-flex items-center justify-center min-w-[2.25rem] px-2 py-1.5 text-sm text-gray-400 dark:text-gray-500">
-                                        {link.label.replace('&laquo; Previous', 'Prev').replace('Next &raquo;', 'Next')}
-                                    </span>
-                                )}
-                            </span>
-                        ))}
+                                >
+                                    {label}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
             )}
+
         </AppLayout>
     );
 }

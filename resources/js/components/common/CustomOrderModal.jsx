@@ -20,8 +20,10 @@ export default function CustomOrderModal({ isOpen, onClose, auth, pricing }) {
         notes: '',
         waist: '',
         hip: '',
+        chest: '',
+        shoulder: '',
         height: '',
-        quantity: '1',
+        quantity: '5',
     })
 
     if (!isOpen) return null
@@ -34,36 +36,50 @@ export default function CustomOrderModal({ isOpen, onClose, auth, pricing }) {
 
     const validateStep2 = () => {
         const newErrors = {}
-    
+
         if (!data.customer_type) {
             newErrors.customer_type = 'Customer type is required'
         }
-    
+
         if (!data.fabric_type) {
             newErrors.fabric_type = 'Fabric type is required'
         }
-    
-        if (!data.quantity || Number(data.quantity) < 1) {
-            newErrors.quantity = 'Quantity must be at least 1'
+
+        if (!data.uniform_type) {
+            newErrors.uniform_type = 'Uniform type is required'
         }
-    
-        if (data.waist && Number(data.waist) < 0) {
-            newErrors.waist = 'Waist must be a positive number'
+
+        if (!data.quantity || Number(data.quantity) < 5) {
+            newErrors.quantity = 'Quantity must be at least 5'
         }
-    
-        if (data.hip && Number(data.hip) < 0) {
-            newErrors.hip = 'Hip must be a positive number'
+
+        if (data.uniform_type === 'bottom') {
+            if (data.waist && Number(data.waist) < 0) {
+                newErrors.waist = 'Waist must be a positive number'
+            }
+            if (data.hip && Number(data.hip) < 0) {
+                newErrors.hip = 'Hip must be a positive number'
+            }
         }
-    
+
+        if (data.uniform_type === 'top') {
+            if (data.chest && Number(data.chest) < 0) {
+                newErrors.chest = 'Chest must be a positive number'
+            }
+            if (data.shoulder && Number(data.shoulder) < 0) {
+                newErrors.shoulder = 'Shoulder must be a positive number'
+            }
+        }
+
         if (data.height && Number(data.height) < 0) {
             newErrors.height = 'Height must be a positive number'
         }
-    
+
         setErrors(newErrors)
-    
+
         return Object.keys(newErrors).length === 0
     }
-    
+
     /* ------------------ NAVIGATION ------------------ */
     const nextStep = () => {
         if (step === 2 && !validateStep2()) return
@@ -155,36 +171,73 @@ export default function CustomOrderModal({ isOpen, onClose, auth, pricing }) {
                                     options={Object.keys(FABRIC_PRICE)}
                                     required
                                 />
-                                <Input
+                                <Select
                                     label="Uniform Type"
                                     value={data.uniform_type}
                                     onChange={e => {
-                                        setData('uniform_type', e.target.value)
-                                        setErrors(prev => ({ ...prev, uniform_type: null }))
+                                        const val = e.target.value
+                                        setData(prev => ({
+                                            ...prev,
+                                            uniform_type: val,
+                                            waist: '', hip: '', chest: '', shoulder: '',
+                                        }))
+                                        setErrors(prev => ({ ...prev, uniform_type: null, waist: null, hip: null, chest: null, shoulder: null }))
                                     }}
                                     error={errors.uniform_type}
+                                    options={['top', 'bottom']}
                                     required
                                 />
-                                <Input
-                                    label="Waist (cm)"
-                                    value={data.waist}
-                                    onChange={e => {
-                                        setData('waist', e.target.value)
-                                        setErrors(prev => ({ ...prev, waist: null }))
-                                    }}
-                                    error={errors.waist}
-                                    required
-                                />
-                                <Input
-                                    label="Hip (cm)"
-                                    value={data.hip}
-                                    onChange={e => {
-                                        setData('hip', e.target.value)
-                                        setErrors(prev => ({ ...prev, hip: null }))
-                                    }}
-                                    error={errors.hip}
-                                    required
-                                />
+
+                                {data.uniform_type === 'bottom' && (
+                                    <>
+                                        <Input
+                                            label="Waist (cm)"
+                                            value={data.waist}
+                                            onChange={e => {
+                                                setData('waist', e.target.value)
+                                                setErrors(prev => ({ ...prev, waist: null }))
+                                            }}
+                                            error={errors.waist}
+                                            required
+                                        />
+                                        <Input
+                                            label="Hip (cm)"
+                                            value={data.hip}
+                                            onChange={e => {
+                                                setData('hip', e.target.value)
+                                                setErrors(prev => ({ ...prev, hip: null }))
+                                            }}
+                                            error={errors.hip}
+                                            required
+                                        />
+                                    </>
+                                )}
+
+                                {data.uniform_type === 'top' && (
+                                    <>
+                                        <Input
+                                            label="Chest (cm)"
+                                            value={data.chest}
+                                            onChange={e => {
+                                                setData('chest', e.target.value)
+                                                setErrors(prev => ({ ...prev, chest: null }))
+                                            }}
+                                            error={errors.chest}
+                                            required
+                                        />
+                                        <Input
+                                            label="Shoulder (cm)"
+                                            value={data.shoulder}
+                                            onChange={e => {
+                                                setData('shoulder', e.target.value)
+                                                setErrors(prev => ({ ...prev, shoulder: null }))
+                                            }}
+                                            error={errors.shoulder}
+                                            required
+                                        />
+                                    </>
+                                )}
+
                                 <Input
                                     label="Height (cm)"
                                     value={data.height}
@@ -198,7 +251,7 @@ export default function CustomOrderModal({ isOpen, onClose, auth, pricing }) {
                                 <Input
                                     label="Quantity"
                                     type="number"
-                                    min="1"
+                                    min="5"
                                     value={data.quantity}
                                     onChange={e => {
                                         setData('quantity', e.target.value)
@@ -250,11 +303,15 @@ export default function CustomOrderModal({ isOpen, onClose, auth, pricing }) {
                                 <SummaryRow label="Customer Type" value={data.customer_type} />
                                 <SummaryRow label="Fabric" value={data.fabric_type} />
                                 <SummaryRow label="Uniform Type" value={data.uniform_type || '—'} />
-                                <SummaryRow label="Notes" value={data.notes || '—'} />
                                 <SummaryRow
                                     label="Measurements"
-                                    value={`W:${data.waist} H:${data.hip} HT:${data.height}`}
+                                    value={
+                                        data.uniform_type === 'bottom'
+                                            ? `Waist: ${data.waist || '—'} cm | Hip: ${data.hip || '—'} cm | Height: ${data.height || '—'} cm`
+                                            : `Chest: ${data.chest || '—'} cm | Shoulder: ${data.shoulder || '—'} cm | Height: ${data.height || '—'} cm`
+                                    }
                                 />
+                                <SummaryRow label="Notes" value={data.notes || '—'} />
                                 <SummaryRow label="Quantity" value={data.quantity} />
                                 <SummaryRow label="Total Price" value={`${totalPrice} MMK`} />
                             </Summary>
@@ -285,7 +342,7 @@ export default function CustomOrderModal({ isOpen, onClose, auth, pricing }) {
                         <button
                             type="button"
                             onClick={handleSubmit}
-                           
+
                             className={`px-4 py-2 bg-emerald-600 text-white rounded-md
                                 ${processing ? 'opacity-50 cursor-not-allowed' : ''}
                             `}

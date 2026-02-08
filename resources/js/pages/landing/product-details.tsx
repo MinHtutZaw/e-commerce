@@ -23,7 +23,7 @@ interface Product {
     image: string;
     gender: "male" | "female" | "unisex";
     uniform_type: "school" | "college" | "university" | "other";
-    min_order_quantity: number;
+   
     is_active: boolean;
     sizes: ProductSize[];
 }
@@ -48,15 +48,15 @@ export default function ProductDetails({ product, auth }: Props) {
 
     const handleAddToCart = () => {
         if (!auth?.user) {
-            toast.error("Please login to add items to cart", {
-                description: "You need an account to shop with us",
-                action: {
-                    label: "Register",
-                    onClick: () => router.visit("/register"),
+            router.visit('/login', {
+                data: {
+                    redirect: window.location.pathname,
                 },
             });
             return;
         }
+        
+        
 
         if (!selectedSizeId) {
             toast.warning("Please select a size", {
@@ -216,7 +216,6 @@ export default function ProductDetails({ product, auth }: Props) {
                                     onClick={handleAddToCart}
                                     disabled={
                                         !selectedSizeId ||
-                                        !auth?.user ||
                                         !selectedSize?.is_available
                                     }
                                     className={`
@@ -232,7 +231,7 @@ export default function ProductDetails({ product, auth }: Props) {
                                 >
                                     <ShoppingCart className="h-5 w-5" />
                                     {!auth?.user
-                                        ? "Register to Add to Cart"
+                                        ? "Login / Register to Continue"
                                         : !selectedSizeId
                                         ? "Select a Size"
                                         : "Add to Cart"}
@@ -267,12 +266,7 @@ export default function ProductDetails({ product, auth }: Props) {
                                             {product.uniform_type}
                                         </span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <span className="font-medium text-gray-900">
-                                            Min Order:
-                                        </span>
-                                        {product.min_order_quantity} piece(s)
-                                    </li>
+                                    
                                 </ul>
                             </div>
                         </div>

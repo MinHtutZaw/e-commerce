@@ -1,5 +1,5 @@
 import RegisteredUserController from '@/actions/App/Http/Controllers/Auth/RegisteredUserController';
-import { home, login } from '@/routes';
+import {  login } from '@/routes';
 import { Form, Head, Link } from '@inertiajs/react';
 import { LoaderCircle, UserPlus } from 'lucide-react';
 
@@ -44,7 +44,7 @@ export default function Register() {
                 <div className="flex flex-1 flex-col justify-center px-6 py-10 sm:px-10 lg:px-14">
                     <div className="mx-auto w-full max-w-sm lg:max-w-md">
                         <div className="lg:hidden mb-8 flex justify-center">
-                            <Link href={home()} className="inline-flex items-center gap-2">
+                            <Link href={"/"} className="inline-flex items-center gap-2">
                                 <AppLogoIcon className="size-10 fill-current text-[var(--foreground)]" />
                                 <span className="font-semibold">EduFit</span>
                             </Link>

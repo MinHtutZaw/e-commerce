@@ -9,9 +9,16 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\CustomOrderController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Models\Product;
 
 Route::get('/', function () {
-    return Inertia::render('landing/welcome');
+    return Inertia::render('landing/welcome', [
+        'products' => Product::with(['sizes', 'category'])
+            ->where('is_active', true)
+            ->inRandomOrder()
+            ->take(3)
+            ->get(),
+    ]);
 })->name('home');
 
 Route::get('/products', [ProductController::class, 'index'])->name('products');
@@ -54,10 +61,17 @@ Route::get('/about', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
         $user = Auth::user();
-        $stats = [];
         
+        // Redirect customers away from admin dashboard
+        if ($user->role !== 'admin') {
+            return redirect('/customer/orders');
+        }
+        
+        $stats = [];
+        $chartData = [];
         $productSales = [];
         $recentOrders = [];
+        $recentCustomOrders = [];
         
         if ($user->role === 'admin') {
             $orderRevenue = \App\Models\Order::where('payment_status', 'paid')->sum('total_amount');
@@ -74,19 +88,34 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'totalRevenue' => $orderRevenue + $customOrderRevenue,
                 'totalCustomOrders' => \App\Models\CustomOrder::count(),
                 'pendingCustomOrders' => \App\Models\CustomOrder::where('status', 'pending')->count(),
+                'processingCustomOrders' => \App\Models\CustomOrder::where('status', 'processing')->count(),
+                'completedCustomOrders' => \App\Models\CustomOrder::where('status', 'completed')->count(),
+                'customOrderRevenue' => $customOrderRevenue,
             ];
             
-            // Daily revenue for last 90 days
-            $chartData = \App\Models\Order::where('payment_status', 'paid')
+            // Daily revenue for last 90 days (orders + custom orders)
+            $orderRevenues = \App\Models\Order::where('payment_status', 'paid')
                 ->where('created_at', '>=', now()->subDays(90))
                 ->selectRaw('DATE(created_at) as date, SUM(total_amount) as revenue')
                 ->groupBy('date')
-                ->orderBy('date')
                 ->get()
-                ->map(fn($item) => [
-                    'date' => $item->date,
-                    'revenue' => (int) $item->revenue,
-                ]);
+                ->keyBy('date');
+            
+            $customOrderRevenues = \App\Models\CustomOrder::whereIn('status', ['confirmed', 'processing', 'completed'])
+                ->where('created_at', '>=', now()->subDays(90))
+                ->selectRaw('DATE(created_at) as date, SUM(total_price) as revenue')
+                ->groupBy('date')
+                ->get()
+                ->keyBy('date');
+            
+            // Merge both revenue streams
+            $allDates = $orderRevenues->keys()->merge($customOrderRevenues->keys())->unique()->sort();
+            $chartData = $allDates->map(fn($date) => [
+                'date' => $date,
+                'revenue' => (int) (($orderRevenues[$date]->revenue ?? 0) + ($customOrderRevenues[$date]->revenue ?? 0)),
+                'orders' => (int) ($orderRevenues[$date]->revenue ?? 0),
+                'customOrders' => (int) ($customOrderRevenues[$date]->revenue ?? 0),
+            ])->values();
             
             // Product sales (top selling products)
             $productSales = \App\Models\OrderItem::join('products', 'order_items.product_id', '=', 'products.id')
@@ -98,7 +127,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->limit(6)
                 ->get();
             
-            // Recent orders
+            // Recent orders (regular)
             $recentOrders = \App\Models\Order::with('user')
                 ->latest()
                 ->limit(5)
@@ -110,12 +139,29 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     'total' => $order->total_amount,
                     'status' => $order->status,
                     'date' => $order->created_at->format('M d, Y'),
+                    'type' => 'order',
+                ]);
+            
+            // Recent custom orders
+            $recentCustomOrders = \App\Models\CustomOrder::with('user')
+                ->latest()
+                ->limit(5)
+                ->get()
+                ->map(fn($order) => [
+                    'id' => $order->id,
+                    'order_number' => 'CUSTOM-' . str_pad($order->id, 5, '0', STR_PAD_LEFT),
+                    'customer' => $order->user?->name ?? 'Guest',
+                    'total' => $order->total_price,
+                    'status' => $order->status,
+                    'date' => $order->created_at->format('M d, Y'),
+                    'type' => 'custom',
                 ]);
         } else {
             $stats = [
                 'totalOrders' => \App\Models\Order::where('user_id', $user->id)->count(),
                 'pendingOrders' => \App\Models\Order::where('user_id', $user->id)->where('status', 'pending')->count(),
                 'totalSpent' => \App\Models\Order::where('user_id', $user->id)->where('payment_status', 'paid')->sum('total_amount'),
+                'totalCustomOrders' => \App\Models\CustomOrder::where('user_id', $user->id)->count(),
             ];
         }
         
@@ -125,6 +171,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'chartData' => $chartData,
             'productSales' => $productSales,
             'recentOrders' => $recentOrders,
+            'recentCustomOrders' => $recentCustomOrders,
         ]);
     })->name('dashboard');
 });
@@ -150,7 +197,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(functio
       Route::delete('/products/{id}', [\App\Http\Controllers\Admin\ProductController::class, 'destroy'])->name('admin.products.destroy');
       Route::post('/categories', [\App\Http\Controllers\Admin\CategoryController::class, 'store']);
     
-    // Customers
+    // Customers CRUD
     Route::get('/customers', [\App\Http\Controllers\Admin\CustomerController::class, 'index'])->name('admin.customers.index');
     Route::get('/customers/{id}/edit', [\App\Http\Controllers\Admin\CustomerController::class, 'edit'])->name('admin.customers.edit');
     Route::put('/customers/{id}', [\App\Http\Controllers\Admin\CustomerController::class, 'update'])->name('admin.customers.update');

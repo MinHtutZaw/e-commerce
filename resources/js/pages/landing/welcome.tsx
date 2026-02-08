@@ -6,8 +6,9 @@ import Navbar from '@/Components/common/Navbar';
 import Footer from '@/Components/common/Footer';
 
 export default function Home() {
-    const { auth } = usePage<SharedData>().props;
-    
+    const { auth, products } = usePage<SharedData & { products: any[] }>().props;
+
+
 
     return (
         <><Head title="Home">
@@ -105,9 +106,79 @@ export default function Home() {
                 </section>
 
 
-              
 
-               
+
+
+                {/* Best Sellers */}
+                <section className="py-16 bg-gray-50 dark:bg-gray-900">
+                    <div className="max-w-7xl mx-auto px-6">
+                        <h2 className="text-3xl font-semibold mb-10 text-center dark:text-white">
+                             Suggested Products For You
+                        </h2>
+
+                        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
+                            {products.map(product => (
+                                <div
+                                    key={product.id}
+                                    className="rounded-xl border bg-white dark:bg-gray-800 p-4 shadow-sm transition hover:shadow-md cursor-pointer"
+                                    onClick={() => window.location.href = `/products/${product.slug}`}
+                                >
+                                    {/* Image */}
+                                    <div className="mb-4 flex h-40 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                                        <img 
+                                            src={product.image ?? '/img/placeholder.png'} 
+                                            alt={product.name} 
+                                            className="h-full object-contain" 
+                                        />
+                                    </div>
+
+                                    {/* Name */}
+                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{product.name}</h3>
+
+                                    {/* Meta Tags */}
+                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                                        <span className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                                            {product.category?.name || 'Uncategorized'}
+                                        </span>
+                                        <span className="text-xs px-2 py-1 rounded bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 capitalize">
+                                            {product.gender}
+                                        </span>
+                                        <span className="text-xs px-2 py-1 rounded bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300 capitalize">
+                                            {product.uniform_type}
+                                        </span>
+                                    </div>
+
+                                    {/* Available Sizes */}
+                                    <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400">
+                                        {product.sizes?.length || 0} size{product.sizes?.length !== 1 ? 's' : ''} available
+                                    </p>
+
+                                    {/* View Details Button */}
+                                    <Link
+                                        href={`/products/${product.slug}`}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="mt-4 block w-full rounded-md py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 transition text-center"
+                                    >
+                                        View Details
+                                    </Link>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* View All Products Button */}
+                        <div className="text-center mt-10">
+                            <Link
+                                href="/products"
+                                className="inline-flex items-center gap-2 px-8 py-3 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
+                            >
+                                View All Products
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                </svg>
+                            </Link>
+                        </div>
+                    </div>
+                </section>
 
 
                 <section className="py-16">
@@ -128,6 +199,7 @@ export default function Home() {
                                 <h3 className="font-semibold mb-2">2. Order</h3>
                                 <p className="text-gray-600">
                                     Place standard or custom uniform orders.
+                                    Make your order and pay for it online.
                                 </p>
                             </div>
 
@@ -142,7 +214,7 @@ export default function Home() {
                 </section>
 
                 {/* footer */}
-               <Footer/>
+                <Footer />
 
 
 

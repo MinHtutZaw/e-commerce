@@ -12,6 +12,8 @@ interface CustomOrder {
     notes?: string;
     waist: string;
     hip: string;
+    chest: string;
+    shoulder: string;
     height: string;
     quantity: number;
     unit_price: number;
@@ -43,6 +45,16 @@ export default function CustomerCustomOrders({ customOrders }: Props) {
             </Badge>
         );
     };
+    const getDeliveryTime = (quantity: number) => {
+
+        if (quantity >= 20) return 'Your order will be delivered in about 4 weeks';
+        if (quantity >= 10) return 'Your order will be delivered in about 3 weeks';
+        if (quantity >= 5) return 'Your order will be delivered in about 2 weeks';
+
+
+        return 'Check availability';
+    };
+
 
     const formatPrice = (price: number) => new Intl.NumberFormat('en-US').format(price) + ' MMK';
 
@@ -156,6 +168,16 @@ export default function CustomerCustomOrders({ customOrders }: Props) {
                                                         <span className="text-gray-500 dark:text-gray-400">Quantity:</span>
                                                         <span className="font-bold text-emerald-600">{order.quantity} pcs</span>
                                                     </div>
+
+                                                    {order.status !== 'completed' && order.status !== 'cancelled' && (
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-500 dark:text-gray-400">Estimated Delivery:</span>
+                                                            <span className="font-medium text-gray-900 dark:text-white">
+                                                                {getDeliveryTime(order.quantity)}
+                                                            </span>
+                                                        </div>
+                                                    )}
+
                                                 </div>
                                             </div>
 
@@ -165,17 +187,32 @@ export default function CustomerCustomOrders({ customOrders }: Props) {
                                                     Measurements (cm)
                                                 </h4>
                                                 <div className="flex flex-wrap gap-2">
-                                                    <div className="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-lg text-sm">
-                                                        <span className="text-gray-500 dark:text-gray-400">Waist:</span>
-                                                        <span className="font-medium text-gray-900 dark:text-white ml-1">{order.waist}</span>
-                                                    </div>
-                                                    <div className="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-lg text-sm">
-                                                        <span className="text-gray-500 dark:text-gray-400">Hip:</span>
-                                                        <span className="font-medium text-gray-900 dark:text-white ml-1">{order.hip}</span>
-                                                    </div>
+                                                    {order.uniform_type === 'bottom' ? (
+                                                        <>
+                                                            <div className="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-lg text-sm">
+                                                                <span className="text-gray-500 dark:text-gray-400">Waist:</span>
+                                                                <span className="font-medium text-gray-900 dark:text-white ml-1">{order.waist || '—'}</span>
+                                                            </div>
+                                                            <div className="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-lg text-sm">
+                                                                <span className="text-gray-500 dark:text-gray-400">Hip:</span>
+                                                                <span className="font-medium text-gray-900 dark:text-white ml-1">{order.hip || '—'}</span>
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <div className="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-lg text-sm">
+                                                                <span className="text-gray-500 dark:text-gray-400">Chest:</span>
+                                                                <span className="font-medium text-gray-900 dark:text-white ml-1">{order.chest || '—'}</span>
+                                                            </div>
+                                                            <div className="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-lg text-sm">
+                                                                <span className="text-gray-500 dark:text-gray-400">Shoulder:</span>
+                                                                <span className="font-medium text-gray-900 dark:text-white ml-1">{order.shoulder || '—'}</span>
+                                                            </div>
+                                                        </>
+                                                    )}
                                                     <div className="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-lg text-sm">
                                                         <span className="text-gray-500 dark:text-gray-400">Height:</span>
-                                                        <span className="font-medium text-gray-900 dark:text-white ml-1">{order.height}</span>
+                                                        <span className="font-medium text-gray-900 dark:text-white ml-1">{order.height || '—'}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -216,7 +253,7 @@ export default function CustomerCustomOrders({ customOrders }: Props) {
                                                 </p>
                                             </div>
                                         )}
-                                       
+
                                         {order.status === 'processing' && (
                                             <div className="mt-6 p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
                                                 <p className="text-sm text-orange-800 dark:text-orange-200">

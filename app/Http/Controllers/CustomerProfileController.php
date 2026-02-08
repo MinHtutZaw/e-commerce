@@ -40,7 +40,8 @@ class CustomerProfileController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
-            'phone' => ['nullable', 'string', 'max:255'],
+            'phone' => ['nullable', 'regex:/^09[0-9]{7,9}$/'],
+
             'address' => ['nullable', 'string', 'max:500'],
         ]);
 

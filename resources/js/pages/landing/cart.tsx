@@ -17,6 +17,8 @@ interface CartItem {
     image: string;
     gender?: string;
     uniform_type?: string;
+    max_quantity: number;
+
 }
 
 interface Props {
@@ -37,6 +39,9 @@ export default function Cart({ items: initialItems, subtotal: initialSubtotal, t
     const [total, setTotal] = useState(initialTotal);
     const [updatingItems, setUpdatingItems] = useState<Set<number>>(new Set());
     const debounceTimers = useRef<Map<number, NodeJS.Timeout>>(new Map());
+
+    const isMaxReached = (item: CartItem) => item.quantity >= item.max_quantity;
+
 
     // Optimistic update for immediate UI feedback
     const updateLocalQuantity = (itemId: number, quantity: number) => {
@@ -60,7 +65,10 @@ export default function Cart({ items: initialItems, subtotal: initialSubtotal, t
 
     // Debounced server update
     const handleQuantityChange = useCallback((itemId: number, quantity: number) => {
-        if (quantity < 1) return;
+        const item = items.find(i => i.id === itemId);
+        if (!item) return;
+
+        if (quantity > item.max_quantity || quantity < 1) return;
 
         // Update UI immediately
         updateLocalQuantity(itemId, quantity);
@@ -123,13 +131,19 @@ export default function Cart({ items: initialItems, subtotal: initialSubtotal, t
     const handleQuantityButton = (itemId: number, delta: number) => {
         const item = items.find(i => i.id === itemId);
         if (!item) return;
-
+    
         const newQuantity = item.quantity + delta;
+    
+        // HARD STOP
         if (newQuantity < 1) return;
-
+            if (newQuantity > item.max_quantity) {
+            toast.warning(`Only ${item.max_quantity} items in stock`);
+            return;
+        }
+    
         handleQuantityChange(itemId, newQuantity);
     };
-
+    
     if (items.length === 0) {
         return (
             <>
@@ -200,6 +214,7 @@ export default function Cart({ items: initialItems, subtotal: initialSubtotal, t
                                             </div>
 
                                             <div className="flex items-center gap-4">
+                                            <div className="flex flex-col gap-1">
                                                 <div className="flex items-center gap-2">
                                                     <label className="text-sm font-medium text-gray-700 mr-2">Qty:</label>
                                                     <div className="flex items-center gap-1 border border-gray-300 rounded-md bg-white">
@@ -215,6 +230,7 @@ export default function Cart({ items: initialItems, subtotal: initialSubtotal, t
                                                             type="number"
                                                             min="1"
                                                             value={item.quantity}
+                                                            readOnly
                                                             onChange={(e) => {
                                                                 const val = parseInt(e.target.value) || 1;
                                                                 handleQuantityChange(item.id, val);
@@ -224,18 +240,30 @@ export default function Cart({ items: initialItems, subtotal: initialSubtotal, t
                                                         />
                                                         <button
                                                             onClick={() => handleQuantityButton(item.id, 1)}
-                                                            disabled={updatingItems.has(item.id)}
-                                                            className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-r-md"
+                                                            disabled={isMaxReached(item) || updatingItems.has(item.id)}
+                                                            className={`
+                                                                    p-2 rounded-r-md transition-all ${isMaxReached(item) ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'}
+                                                                     `}
                                                             aria-label="Increase quantity"
                                                         >
                                                             <Plus size={16} className="text-gray-600" />
                                                         </button>
+
+
                                                     </div>
+
+                                                    
+
                                                     {updatingItems.has(item.id) && (
                                                         <span className="text-xs text-gray-500 animate-pulse"></span>
                                                     )}
                                                 </div>
 
+                                                {/* max stock */}
+                                                {isMaxReached(item) && (
+                                                        <span className="text-xs text-orange-500 font-medium"> Stock Available: ({item.max_quantity})</span>
+                                                    )}
+                                            </div>
                                                 <div className="w-24 text-right">
                                                     <p className="text-base font-semibold text-gray-900">
                                                         <span>{item.total_price.toLocaleString()}</span>{' '}
@@ -251,9 +279,16 @@ export default function Cart({ items: initialItems, subtotal: initialSubtotal, t
                                                     <Trash2 size={20} />
                                                 </button>
                                             </div>
+
+
+
                                         </div>
+
+
                                     </div>
                                 ))}
+
+
                             </div>
                         </div>
 
@@ -286,12 +321,12 @@ export default function Cart({ items: initialItems, subtotal: initialSubtotal, t
                                         }, {
                                             onError: (errors) => {
                                                 console.error('Order creation error:', errors);
-                                            
+
                                                 // If Laravel validation errors exist
                                                 const message = errors?.message || JSON.stringify(errors);
                                                 toast.error('Failed to create order', { description: message });
                                             },
-                                            
+
                                         });
                                     }}
                                     className="mt-6 w-full rounded-md bg-purple-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"

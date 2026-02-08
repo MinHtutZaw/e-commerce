@@ -17,6 +17,8 @@ class CustomOrder extends Model
         'notes',
         'waist',
         'hip',
+        'chest',
+        'shoulder',
         'height',
         'quantity',
         'unit_price',
@@ -27,6 +29,8 @@ class CustomOrder extends Model
     protected $casts = [
         'waist' => 'decimal:2',
         'hip' => 'decimal:2',
+        'chest' => 'decimal:2',
+        'shoulder' => 'decimal:2',
         'height' => 'decimal:2',
         'unit_price' => 'integer',
         'total_price' => 'integer',

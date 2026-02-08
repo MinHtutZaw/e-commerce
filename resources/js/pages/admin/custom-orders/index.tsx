@@ -52,6 +52,8 @@ interface CustomOrder {
     notes?: string;
     waist: string;
     hip: string;
+    chest: string;
+    shoulder: string;
     height: string;
     quantity: number;
     unit_price: number;
@@ -322,14 +324,29 @@ export default function Index({ customOrders }: Props) {
                                     <Ruler className="h-4 w-4" /> Measurements (cm)
                                 </h3>
                                 <div className="grid grid-cols-3 gap-4">
-                                    <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded text-center">
-                                        <p className="text-gray-500 text-xs">Waist</p>
-                                        <p className="text-xl font-bold">{selectedOrder.waist || '—'}</p>
-                                    </div>
-                                    <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded text-center">
-                                        <p className="text-gray-500 text-xs">Hip</p>
-                                        <p className="text-xl font-bold">{selectedOrder.hip || '—'}</p>
-                                    </div>
+                                    {selectedOrder.uniform_type === 'bottom' ? (
+                                        <>
+                                            <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded text-center">
+                                                <p className="text-gray-500 text-xs">Waist</p>
+                                                <p className="text-xl font-bold">{selectedOrder.waist || '—'}</p>
+                                            </div>
+                                            <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded text-center">
+                                                <p className="text-gray-500 text-xs">Hip</p>
+                                                <p className="text-xl font-bold">{selectedOrder.hip || '—'}</p>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded text-center">
+                                                <p className="text-gray-500 text-xs">Chest</p>
+                                                <p className="text-xl font-bold">{selectedOrder.chest || '—'}</p>
+                                            </div>
+                                            <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded text-center">
+                                                <p className="text-gray-500 text-xs">Shoulder</p>
+                                                <p className="text-xl font-bold">{selectedOrder.shoulder || '—'}</p>
+                                            </div>
+                                        </>
+                                    )}
                                     <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded text-center">
                                         <p className="text-gray-500 text-xs">Height</p>
                                         <p className="text-xl font-bold">{selectedOrder.height || '—'}</p>
